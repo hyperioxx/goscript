@@ -40,7 +40,6 @@ const (
 	OpAssign
 	OpGet
 	OpCall
-	OpDeclare
 	OpStoreFunc
 	OpReturn
 	OpJumpIfFalse
@@ -70,7 +69,6 @@ var OpCodeStrings = map[OpCode]string{
 	OpAssign:             "Assign",
 	OpGet:                "Get",
 	OpCall:               "Call",
-	OpDeclare:            "Declare",
 	OpStoreFunc:          "StoreFunc",
 	OpReturn:             "Return",
 	OpJumpIfFalse:        "JumpIfFalse",
@@ -404,8 +402,6 @@ func (vm *VM) Run(instructions []Instruction) Object {
 		case OpStoreFunc:
 			function := instruction.Value.(Callable)
 			vm.CurrentFrame().Scope[function.GetName()] = function
-		case OpDeclare:
-			// TODO: declares happen here
 		case OpGet:
 			name, ok := instruction.Value.(*String)
 			if !ok {
