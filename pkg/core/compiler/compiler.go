@@ -38,6 +38,28 @@ func (c *V1Compiler) Compile(program []parser.Node, debug bool) ([]virtualmachin
 
 func (c *V1Compiler) compileNode(node parser.Node, debug bool) ([]virtualmachine.Instruction, error) {
 	switch exp := node.(type) {
+	case *parser.VariableDeclaration:
+		var _type virtualmachine.Object
+		switch exp.Type.Type { // TODO: rethink this
+		case lexer.INT:
+			_type = &virtualmachine.Integer{}
+		case lexer.STRING:
+			_type = &virtualmachine.String{}
+		case lexer.FLOAT:
+			_type = &virtualmachine.String{}
+		default:
+			return nil, fmt.Errorf("unknown type")
+		}
+		// TODO: create instructions to create a variable
+		instructions := []virtualmachine.Instruction{
+			{Opcode: virtualmachine.OpPush, Value: &virtualmachine.String{StringValue: exp.Identifier.String()}},
+			{Opcode: virtualmachine.OpPush, Value: _type},
+			{Opcode: virtualmachine.OpAssign},
+		}
+		if debug {
+			fmt.Println("Compiled IntegerLiteral:", instructions)
+		}
+		return instructions, nil
 	case *parser.IntegerLiteral:
 		instructions := []virtualmachine.Instruction{
 			{Opcode: virtualmachine.OpPush, Value: &virtualmachine.Integer{IntValue: exp.Value().(int)}},

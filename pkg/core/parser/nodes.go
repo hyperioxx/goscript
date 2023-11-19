@@ -600,17 +600,16 @@ func (sl *StructLiteral) GetColumn() int {
 }
 
 type VariableDeclaration struct {
-    Identifier *IdentifierLiteral
-    Type       lexer.Token
-    Line       int
-    Column     int
+	Identifier *IdentifierLiteral
+	Type       lexer.Token
+	Line       int
+	Column     int
 }
 
 func (vd *VariableDeclaration) String() string {
-    return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
+	return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
 }
 
 func (vd *VariableDeclaration) Value() interface{} { return vd }
 func (vd *VariableDeclaration) GetLine() int       { return vd.Line }
 func (vd *VariableDeclaration) GetColumn() int     { return vd.Column }
-

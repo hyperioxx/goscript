@@ -350,6 +350,11 @@ func (p *V1Parser) parseIdentifier() Node {
 	ident := &IdentifierLiteral{value: p.curToken.Value}
 	p.lastParsedIdent = p.curToken.Value
 
+	if p.peekTokenIs(lexer.INT) || p.peekTokenIs(lexer.STRING) || p.peekTokenIs(lexer.FLOAT) {
+		p.nextToken()
+		return &VariableDeclaration{Identifier: ident, Type: p.curToken}
+	}
+
 	if p.Debug {
 		fmt.Printf("Parsed IDENT: %v\n", ident.value)
 	}
@@ -387,10 +392,6 @@ func (p *V1Parser) parseIdentifier() Node {
 	if p.peekTokenIs(lexer.DEC) {
 		p.nextToken()
 		return &DecrementNode{Operand: ident}
-	}
-
-	if p.peekTokenIs(lexer.INT) || p.peekTokenIs(lexer.STRING) || p.peekTokenIs(lexer.FLOAT){
-       
 	}
 
 	if p.Debug {

@@ -2,7 +2,7 @@ package virtualmachine
 
 import "fmt"
 
-func gsprint(args []Object) (Object, error) {
+func _print(args []Object) (Object, error) {
 	interfaceArgs := make([]interface{}, len(args))
 	for i, v := range args {
 		str, err := v.String()
@@ -18,7 +18,15 @@ func gsprint(args []Object) (Object, error) {
 	return Nil{}, nil
 }
 
-func gslength(args []Object) (Object, error) {
+func _length(args []Object) (Object, error) {
 	// TODO: build out builtin len function
 	return Nil{}, nil
+}
+
+func _type(args []Object) (Object, error) {
+	if len(args) != 1 {
+		return Nil{}, fmt.Errorf("type function only takes one argument")
+	}
+	args[0].Type()
+	return String{StringValue: args[0].Type()}, nil
 }

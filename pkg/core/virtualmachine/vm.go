@@ -40,6 +40,7 @@ const (
 	OpAssign
 	OpGet
 	OpCall
+	OpDeclare
 	OpStoreFunc
 	OpReturn
 	OpJumpIfFalse
@@ -69,6 +70,7 @@ var OpCodeStrings = map[OpCode]string{
 	OpAssign:             "Assign",
 	OpGet:                "Get",
 	OpCall:               "Call",
+	OpDeclare:            "Declare",
 	OpStoreFunc:          "StoreFunc",
 	OpReturn:             "Return",
 	OpJumpIfFalse:        "JumpIfFalse",
@@ -111,7 +113,9 @@ func NewVirtualMachine(debug bool) *VM {
 		IsRunning:    true,
 		ModuleLoader: NewModuleLoader(debug),
 	}
-	vm.registerBuiltin("print", gsprint)
+	vm.registerBuiltin("print", _print)
+	vm.registerBuiltin("length", _length)
+	vm.registerBuiltin("type", _type)
 	return vm
 }
 
@@ -400,7 +404,8 @@ func (vm *VM) Run(instructions []Instruction) Object {
 		case OpStoreFunc:
 			function := instruction.Value.(Callable)
 			vm.CurrentFrame().Scope[function.GetName()] = function
-
+		case OpDeclare:
+			// TODO: declares happen here
 		case OpGet:
 			name, ok := instruction.Value.(*String)
 			if !ok {

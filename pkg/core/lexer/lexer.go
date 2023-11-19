@@ -165,11 +165,11 @@ func (l *V1Lexer) NextToken() Token {
 		tok = newToken(COMMA, ",")
 	case ':':
 		if l.peekChar() == '=' {
-            tok = newToken(ASSIGN_INF, ":=")
-            l.readChar()
-        } else {
-            tok = newToken(COLON, ":")
-        }
+			tok = newToken(ASSIGN_INF, ":=")
+			l.readChar()
+		} else {
+			tok = newToken(COLON, ":")
+		}
 	case '{':
 		tok = newToken(LBRACE, "{")
 	case '}':

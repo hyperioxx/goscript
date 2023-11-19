@@ -17,8 +17,6 @@ const (
 	STRUCT
 	NUMBER
 
-
-
 	// Operators
 	ADD         // +
 	SUB         // -
@@ -80,7 +78,7 @@ var keywordLookup = map[string]TokenType{
 	"if":       IF,
 	"else":     ELSE,
 	"for":      FOR,
-	"forever":  FOREVER, 
+	"forever":  FOREVER,
 	"break":    BREAK,
 	"continue": CONTINUE,
 	"import":   IMPORT,
