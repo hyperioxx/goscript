@@ -46,7 +46,7 @@ func (c *V1Compiler) compileNode(node parser.Node, debug bool) ([]virtualmachine
 		case lexer.STRING:
 			_type = &virtualmachine.String{}
 		case lexer.FLOAT:
-			_type = &virtualmachine.String{}
+			_type = &virtualmachine.Float{}
 		default:
 			return nil, fmt.Errorf("unknown type")
 		}
