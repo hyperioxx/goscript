@@ -601,7 +601,7 @@ func (sl *StructLiteral) GetColumn() int {
 
 type VariableDeclaration struct {
     Identifier *IdentifierLiteral
-    Type       lexer.TokenTypeToken // Assuming you have a Token type
+    Type       lexer.Token
     Line       int
     Column     int
 }
