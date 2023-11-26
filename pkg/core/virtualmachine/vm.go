@@ -38,6 +38,7 @@ const (
 	OpJump
 	OpPush
 	OpAssign
+	OpDeclare
 	OpGet
 	OpCall
 	OpStoreFunc
@@ -67,6 +68,7 @@ var OpCodeStrings = map[OpCode]string{
 	OpJump:               "Jump",
 	OpPush:               "Push",
 	OpAssign:             "Assign",
+	OpDeclare:            "Declare",
 	OpGet:                "Get",
 	OpCall:               "Call",
 	OpStoreFunc:          "StoreFunc",
@@ -109,8 +111,9 @@ func NewVirtualMachine(debug bool) *VM {
 		Debug:        debug,
 		MaxStackSize: 100000,
 		IsRunning:    true,
-		ModuleLoader: NewModuleLoader(debug),
 	}
+
+	// register built-in functions here 
 	vm.registerBuiltin("print", _print)
 	vm.registerBuiltin("length", _length)
 	vm.registerBuiltin("type", _type)
@@ -431,6 +434,8 @@ func (vm *VM) Run(instructions []Instruction) Object {
 			}
 			module := vm.ModuleLoader.GetModule(name.StringValue)
 			vm.CurrentFrame().Scope[module.Name] = module
+		case OpDeclare:
+			// TODO: create declare
 		}
 
 		vm.CurrentFrame().InstructionPointer++

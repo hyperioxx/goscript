@@ -135,7 +135,7 @@ func (fc *FunctionCall) GetColumn() int {
 
 type FunctionLiteral struct {
 	Name       string
-	Parameters []*IdentifierLiteral
+	Parameters []*VariableDeclaration
 	Body       []Node
 	Line       int
 	Column     int
@@ -379,7 +379,7 @@ func NewPrefixNode(operator string, right Node, line, column int) *PrefixNode {
 	}
 }
 
-func NewFunctionLiteral(name string, parameters []*IdentifierLiteral, body []Node, line, column int) *FunctionLiteral {
+func NewFunctionLiteral(name string, parameters []*VariableDeclaration, body []Node, line, column int) *FunctionLiteral {
 	return &FunctionLiteral{
 		Name:       name,
 		Parameters: parameters,

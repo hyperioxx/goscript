@@ -92,6 +92,7 @@ func NewV1Parser(l lexer.Lexer, debug bool) Parser {
 	p.registerPrefix(lexer.FOR, p.parseForStatement)
 	p.registerPrefix(lexer.STRING, p.parseStringLiteral)
 	p.registerPrefix(lexer.FLOAT, p.parseFloatLiteral)
+	p.registerPrefix(lexer.BOOL, p.parseBooleanLiteral)
 	p.registerPrefix(lexer.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(lexer.TRUE, p.parseBooleanLiteral)
 	p.registerPrefix(lexer.FALSE, p.parseBooleanLiteral)
@@ -350,13 +351,14 @@ func (p *V1Parser) parseIdentifier() Node {
 	ident := &IdentifierLiteral{value: p.curToken.Value}
 	p.lastParsedIdent = p.curToken.Value
 
-	if p.peekTokenIs(lexer.INT) || p.peekTokenIs(lexer.STRING) || p.peekTokenIs(lexer.FLOAT) {
-		p.nextToken()
-		return &VariableDeclaration{Identifier: ident, Type: p.curToken}
-	}
-
 	if p.Debug {
 		fmt.Printf("Parsed IDENT: %v\n", ident.value)
+	}
+
+	if p.peekTokenIs(lexer.INT) || p.peekTokenIs(lexer.STRING) || p.peekTokenIs(lexer.FLOAT) || p.peekTokenIs(lexer.BOOL) || p.peekTokenIs(lexer.STRUCT) {
+		p.nextToken()
+		defer p.nextToken()
+		return &VariableDeclaration{Identifier: ident, Type: p.curToken}
 	}
 
 	if p.peekTokenIs(lexer.LPAREN) {
@@ -572,37 +574,40 @@ func (p *V1Parser) curPrecedence() int {
 }
 
 func (p *V1Parser) parseFunctionLiteral() Node {
+
+	if p.Debug {
+		fmt.Println("Entering function literal ")
+	}
 	fl := &FunctionLiteral{}
 	p.nextToken()
-	// Check if the current token is an opening parenthesis
-	if p.curTokenIs(lexer.LPAREN) {
-		fl.Name = "_anonymous" // placeholder name for nameless functions we would have to generate a unique name as you can only have 1 nameless function per scope
-	} else {
-		fl.Name = p.curToken.Value
-		p.nextToken()
-	}
+
+	fl.Name = p.curToken.Value
+
+	p.nextToken()
+
+	fmt.Println(lexer.TokenTypeStr[p.curToken.Type])
 
 	if !p.peekTokenIs(lexer.RPAREN) {
+		p.nextToken()
 		for !p.peekTokenIs(lexer.RPAREN) {
+			fmt.Println(p.curToken.Value)
+			param := &VariableDeclaration{Identifier: &IdentifierLiteral{value: p.curToken.Value}}
 			p.nextToken()
-			param := &IdentifierLiteral{value: p.curToken.Value}
-			fl.Parameters = append(fl.Parameters, param)
+			param.Type = p.curToken
 			p.nextToken()
-			if p.curToken.Type == lexer.COMMA {
-				p.nextToken()
-			}
+			fmt.Println(p.curToken.Value)
+			// p.nextToken()
+			// // fl.Parameters = append(fl.Parameters, param)
 		}
+		p.nextToken()
 
-		// final arg
-		param := &IdentifierLiteral{value: p.curToken.Value}
-		fl.Parameters = append(fl.Parameters, param)
 	}
 
 	p.nextToken()
-	p.nextToken() // should be this symbol {
+	p.nextToken()
 
 	for !p.peekTokenIs(lexer.RBRACE) {
-		p.nextToken()
+
 		var expr Node
 		if p.curToken.Type == lexer.RETURN {
 			expr = p.parseReturnStatement()
@@ -619,7 +624,7 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	} else {
 		fl.Body = append(fl.Body, &ReturnStatement{})
 	}
-
+	fmt.Println("Exit function literal")
 	return fl
 }
 

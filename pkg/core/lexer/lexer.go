@@ -147,12 +147,11 @@ func (l *V1Lexer) NextToken() Token {
 	case ';':
 		tok = newToken(SEMICOLON, ";")
 	case '\n':
-		l.readChar()
 		if l.ch == -1 {
-			return newToken(EOF, "EOF")
+			tok = newToken(EOF, "EOF")
+		} else {
+			tok = newToken(NEWLINE, "\n")
 		}
-
-		return l.NextToken()
 	case '[':
 		tok = newToken(LBRACKET, "[")
 	case ']':
