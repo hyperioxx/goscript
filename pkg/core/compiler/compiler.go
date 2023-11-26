@@ -13,8 +13,16 @@ type Compiler interface {
 	Compile(program []parser.Node, debug bool) ([]virtualmachine.Instruction, error)
 }
 
+// SymbolEntry is an entry into a symbol table
+type SymbolEntry struct {
+    Type       string
+    ScopeLevel int
+} 
+
 // V1Compiler is the initial compiler build
-type V1Compiler struct{}
+type V1Compiler struct{
+	symbolTable map[string] SymbolEntry
+}
 
 // NewCompiler creates a new instance on the V1Compiler
 func NewCompiler() Compiler {
@@ -38,6 +46,28 @@ func (c *V1Compiler) Compile(program []parser.Node, debug bool) ([]virtualmachin
 
 func (c *V1Compiler) compileNode(node parser.Node, debug bool) ([]virtualmachine.Instruction, error) {
 	switch exp := node.(type) {
+	case *parser.VariableDeclaration:
+		var _type virtualmachine.Object
+		switch exp.Type.Type { // TODO: rethink this
+		case lexer.INT:
+			_type = &virtualmachine.Integer{}
+		case lexer.STRING:
+			_type = &virtualmachine.String{}
+		case lexer.FLOAT:
+			_type = &virtualmachine.Float{}
+		default:
+			return nil, fmt.Errorf("unknown type")
+		}
+		// TODO: create instructions to create a variable
+		instructions := []virtualmachine.Instruction{
+			{Opcode: virtualmachine.OpPush, Value: &virtualmachine.String{StringValue: exp.Identifier.String()}},
+			{Opcode: virtualmachine.OpPush, Value: _type},
+			{Opcode: virtualmachine.OpDeclare},
+		}
+		if debug {
+			fmt.Println("Compiled IntegerLiteral:", instructions)
+		}
+		return instructions, nil
 	case *parser.IntegerLiteral:
 		instructions := []virtualmachine.Instruction{
 			{Opcode: virtualmachine.OpPush, Value: &virtualmachine.Integer{IntValue: exp.Value().(int)}},
@@ -95,8 +125,9 @@ func (c *V1Compiler) compileNode(node parser.Node, debug bool) ([]virtualmachine
 			if id, ok := exp.Left.(*parser.IdentifierLiteral); ok {
 				left = []virtualmachine.Instruction{{Opcode: virtualmachine.OpPush, Value: &virtualmachine.String{StringValue: id.Value().(string)}}}
 				op = virtualmachine.OpAssign
-			} else {
-				return nil, fmt.Errorf("left-hand side of assignment is not an identifier")
+			} else if id, ok := exp.Left.(*parser.VariableDeclaration); ok {
+				left = []virtualmachine.Instruction{{Opcode: virtualmachine.OpPush, Value: &virtualmachine.String{StringValue: id.Value().(string)}}}
+				op = virtualmachine.OpAssign
 			}
 		case lexer.TokenTypeStr[lexer.EQ]:
 			op = virtualmachine.OpEqual
@@ -168,7 +199,7 @@ func (c *V1Compiler) compileNode(node parser.Node, debug bool) ([]virtualmachine
 
 		params := make([]string, len(exp.Parameters))
 		for i, p := range exp.Parameters {
-			params[i] = p.Value().(string)
+			params[i] = p.Identifier.String()
 		}
 		function := &virtualmachine.Function{
 			Name:       exp.Name,

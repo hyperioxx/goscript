@@ -38,7 +38,7 @@ type Integer struct {
 }
 
 func (i Integer) Type() string {
-	return "integer"
+	return "int"
 }
 
 func (i Integer) Value() interface{} {

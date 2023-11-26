@@ -135,7 +135,7 @@ func (fc *FunctionCall) GetColumn() int {
 
 type FunctionLiteral struct {
 	Name       string
-	Parameters []*IdentifierLiteral
+	Parameters []*VariableDeclaration
 	Body       []Node
 	Line       int
 	Column     int
@@ -379,7 +379,7 @@ func NewPrefixNode(operator string, right Node, line, column int) *PrefixNode {
 	}
 }
 
-func NewFunctionLiteral(name string, parameters []*IdentifierLiteral, body []Node, line, column int) *FunctionLiteral {
+func NewFunctionLiteral(name string, parameters []*VariableDeclaration, body []Node, line, column int) *FunctionLiteral {
 	return &FunctionLiteral{
 		Name:       name,
 		Parameters: parameters,
@@ -600,17 +600,16 @@ func (sl *StructLiteral) GetColumn() int {
 }
 
 type VariableDeclaration struct {
-    Identifier *IdentifierLiteral
-    Type       lexer.Token
-    Line       int
-    Column     int
+	Identifier *IdentifierLiteral
+	Type       lexer.Token
+	Line       int
+	Column     int
 }
 
 func (vd *VariableDeclaration) String() string {
-    return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
+	return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
 }
 
 func (vd *VariableDeclaration) Value() interface{} { return vd }
 func (vd *VariableDeclaration) GetLine() int       { return vd.Line }
 func (vd *VariableDeclaration) GetColumn() int     { return vd.Column }
-

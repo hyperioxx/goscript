@@ -31,7 +31,7 @@ type Application struct {
 }
 
 func NewApplication(args []string, exit func(int)) *Application {
-	debugFlag := flag.Bool("debug", false, "Enable debug mode")
+	debugFlag := flag.Bool("v", false, "verbose")
 	versionFlag := flag.Bool("version", false, "Print version information")
 
 	commands := map[string]CommandFactory{

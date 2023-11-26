@@ -32,7 +32,6 @@ func (f *FileHandler) Execute(args []string) error {
 	}
 
 	fileContent := string(fileBytes)
-
 	l := lexer.NewV1Lexer(fileContent)
 	p := parser.NewV1Parser(l, *f.debugFlag)
 	exp := p.ParseProgram()
