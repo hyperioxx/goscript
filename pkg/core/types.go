@@ -1,4 +1,4 @@
-package virtualmachine
+package core
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ type Integer struct {
 }
 
 func (i Integer) Type() string {
-	return "int"
+	return "integer"
 }
 
 func (i Integer) Value() interface{} {
@@ -497,7 +497,6 @@ func (m Map) String() Object {
 type Function struct {
 	Name       string
 	Parameters []string
-	Body       []Instruction
 }
 
 func (f *Function) Type() string {
@@ -507,8 +506,7 @@ func (f *Function) Type() string {
 func (f *Function) Value() interface{} {
 	return struct {
 		parameters []string
-		Body       []Instruction
-	}{f.Parameters, f.Body}
+	}{f.Parameters}
 }
 
 func (f *Function) GetName() string {

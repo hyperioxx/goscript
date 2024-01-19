@@ -34,11 +34,7 @@ func NewApplication(args []string, exit func(int)) *Application {
 	debugFlag := flag.Bool("v", false, "verbose")
 	versionFlag := flag.Bool("version", false, "Print version information")
 
-	commands := map[string]CommandFactory{
-		"lint": func(debugFlag *bool) (Command, error) {
-			return NewLinter(debugFlag), nil
-		},
-	}
+	commands := map[string]CommandFactory{}
 
 	return &Application{
 		debugFlag:   debugFlag,

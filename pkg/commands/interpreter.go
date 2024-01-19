@@ -7,10 +7,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hyperioxx/goscript/pkg/core/compiler"
-	"github.com/hyperioxx/goscript/pkg/core/lexer"
-	"github.com/hyperioxx/goscript/pkg/core/parser"
-	"github.com/hyperioxx/goscript/pkg/core/virtualmachine"
+	"github.com/hyperioxx/goscript/pkg/core"
 	"github.com/hyperioxx/goscript/pkg/version"
 )
 
@@ -29,13 +26,13 @@ func NewInterpreter(debugFlag *bool, ver version.Version) *Interpreter {
 func (i *Interpreter) Execute(args []string) error {
 	i.printSystemInfo()
 	scanner := bufio.NewScanner(os.Stdin)
-	vm := virtualmachine.NewVirtualMachine(*i.debugFlag)
-
+	e := core.NewEvaluator(*i.debugFlag)
+	
 	var multiLine string
 	isMultiLine := false
 	prompt := ">> "
 
-	for vm.IsRunning {
+	for {
 		fmt.Print(prompt)
 		scanned := scanner.Scan()
 		if !scanned {
@@ -66,23 +63,19 @@ func (i *Interpreter) Execute(args []string) error {
 			continue
 		}
 
-		l := lexer.NewV1Lexer(line)
-		p := parser.NewV1Parser(l, *i.debugFlag)
-		exp := p.ParseProgram()
-		c := compiler.NewCompiler()
-		instructions, err := c.Compile(exp, *i.debugFlag)
-		if err != nil {
-			msg := fmt.Sprintf("error compiling expression: %v\n", err)
-			vm.StackTrace(msg, virtualmachine.Instruction{}, 1, 1, 0)
-			continue
-		}
-
-		result := vm.Run(instructions)
-		if result != nil && result.Type() != "nil" {
-			fmt.Println(result.Value())
+		l := core.NewV1Lexer(line)
+		p := core.NewV1Parser(l, *i.debugFlag)
+		program := p.ParseProgram()
+        for _, exp := range program {
+			value, err := e.Evaluate(exp)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if _, ok := value.(*core.Nil); !ok {
+				fmt.Println(value.Value())
+			}
 		}
 	}
-	return nil
 }
 
 func (i *Interpreter) printSystemInfo() {
