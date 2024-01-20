@@ -1,3 +1,5 @@
+# GoScript
+
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
 <script>
@@ -15,8 +17,6 @@ Prism.languages.goscript = {
     'punctuation': /[{}[\];(),.:]/
 };
 </script>
-
-# GoScript
 
 GoScript is a dynamically typed, interpreted language created out of curiosity to answer that question we ask as programmers: "How do you make a programming language from scratch?" So, I've given it a try.
 
