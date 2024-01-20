@@ -2,12 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
-	"github.com/hyperioxx/goscript/pkg/core/compiler"
-	"github.com/hyperioxx/goscript/pkg/core/lexer"
-	"github.com/hyperioxx/goscript/pkg/core/parser"
-	"github.com/hyperioxx/goscript/pkg/core/virtualmachine"
+	"github.com/hyperioxx/goscript/pkg/core"
 )
 
 type FileHandler struct {
@@ -26,25 +23,19 @@ func (f *FileHandler) Execute(args []string) error {
 	}
 	filename := args[len(args)-1]
 
-	fileBytes, err := ioutil.ReadFile(filename)
+	fileBytes, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("error reading file %s: %v", filename, err)
 	}
 
 	fileContent := string(fileBytes)
-
-	l := lexer.NewV1Lexer(fileContent)
-	p := parser.NewV1Parser(l, *f.debugFlag)
-	exp := p.ParseProgram()
-
-	c := compiler.NewCompiler()
-	instructions, err := c.Compile(exp, *f.debugFlag)
-	if err != nil {
-		return fmt.Errorf("error compiling expression: %v\n", err)
+	l := core.NewV1Lexer(fileContent)
+	p := core.NewV1Parser(l, *f.debugFlag)
+	e := core.NewEvaluator(*f.debugFlag)
+	program := p.ParseProgram()
+	for _, exp := range program {
+		e.Evaluate(exp)
 	}
-
-	vm := virtualmachine.NewVirtualMachine(*f.debugFlag)
-	vm.Run(instructions)
 
 	return nil
 }

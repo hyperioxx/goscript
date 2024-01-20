@@ -1,41 +1,40 @@
-package parser
+package core
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/hyperioxx/goscript/pkg/core/lexer"
 )
 
 const (
 	_ int = iota
 	LOWEST
-	ASSIGN
-	IF
+	ASSIGN_P
+	IF_P
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -X or !X
 
-	ARRAY
-	CALL // foo(X)
+	ARRAY_P
+	CALL_P // foo(X)
 )
 
-var precedences = map[lexer.TokenType]int{
-	lexer.EQ:         EQUALS,
-	lexer.NOT_EQ:     EQUALS,
-	lexer.LT:         LESSGREATER,
-	lexer.GT:         LESSGREATER,
-	lexer.ADD:        SUM,
-	lexer.SUB:        SUM,
-	lexer.MUL:        PRODUCT,
-	lexer.DIV:        PRODUCT,
-	lexer.LPAREN:     CALL,
-	lexer.ASSIGN:     ASSIGN,
-	lexer.ASSIGN_INF: ASSIGN,
-	lexer.IF:         IF,
-	lexer.LBRACKET:   ARRAY,
+var precedences = map[TokenType]int{
+	EQ:         EQUALS,
+	NOT_EQ:     EQUALS,
+	LT:         LESSGREATER,
+	GT:         LESSGREATER,
+	ADD:        SUM,
+	SUB:        SUM,
+	MUL:        PRODUCT,
+	DIV:        PRODUCT,
+	LPAREN:     CALL_P,
+	ASSIGN:     ASSIGN_P,
+	ASSIGN_INF: ASSIGN_P,
+	IF:         IF_P,
+	LBRACKET:   ARRAY_P,
 }
 
 type Parser interface {
@@ -44,15 +43,15 @@ type Parser interface {
 }
 
 type V1Parser struct {
-	l lexer.Lexer
+	l Lexer
 
-	curToken        lexer.Token
-	peekToken       lexer.Token
+	curToken        Token
+	peekToken       Token
 	errors          []string
 	Debug           bool
 	lastParsedIdent string
-	prefixParseFns  map[lexer.TokenType]prefixParseFn
-	infixParseFns   map[lexer.TokenType]infixParseFn
+	prefixParseFns  map[TokenType]prefixParseFn
+	infixParseFns   map[TokenType]infixParseFn
 }
 
 type (
@@ -60,43 +59,43 @@ type (
 	infixParseFn  func(Node) Node
 )
 
-func NewV1Parser(l lexer.Lexer, debug bool) Parser {
+func NewV1Parser(l Lexer, debug bool) Parser {
 	p := &V1Parser{
 		l:      l,
 		errors: []string{},
 		Debug:  debug,
 	}
 
-	p.prefixParseFns = make(map[lexer.TokenType]prefixParseFn)
-	p.infixParseFns = make(map[lexer.TokenType]infixParseFn)
+	p.prefixParseFns = make(map[TokenType]prefixParseFn)
+	p.infixParseFns = make(map[TokenType]infixParseFn)
 
-	p.registerInfix(lexer.ADD, p.parseInfixNode)
-	p.registerInfix(lexer.SUB, p.parseInfixNode)
-	p.registerInfix(lexer.MUL, p.parseInfixNode)
-	p.registerInfix(lexer.DIV, p.parseInfixNode)
-	p.registerInfix(lexer.EQ, p.parseInfixNode)
-	p.registerInfix(lexer.NOT_EQ, p.parseInfixNode)
-	p.registerInfix(lexer.GT, p.parseInfixNode)
-	p.registerInfix(lexer.LT, p.parseInfixNode)
-	p.registerInfix(lexer.GT_EQ, p.parseInfixNode)
-	p.registerInfix(lexer.LT_EQ, p.parseInfixNode)
-	p.registerInfix(lexer.ASSIGN, p.parseAssignNode)
-	p.registerInfix(lexer.ASSIGN_INF, p.parseAssignNode)
+	p.registerInfix(ADD, p.parseInfixNode)
+	p.registerInfix(SUB, p.parseInfixNode)
+	p.registerInfix(MUL, p.parseInfixNode)
+	p.registerInfix(DIV, p.parseInfixNode)
+	p.registerInfix(EQ, p.parseInfixNode)
+	p.registerInfix(NOT_EQ, p.parseInfixNode)
+	p.registerInfix(GT, p.parseInfixNode)
+	p.registerInfix(LT, p.parseInfixNode)
+	p.registerInfix(GT_EQ, p.parseInfixNode)
+	p.registerInfix(LT_EQ, p.parseInfixNode)
+	p.registerInfix(ASSIGN, p.parseAssignNode)
+	p.registerInfix(ASSIGN_INF, p.parseAssignNode)
 	// prefix expressions
-	p.registerPrefix(lexer.INT, p.parseIntegerLiteral)
-	p.registerPrefix(lexer.IDENT, p.parseIdentifier)
-	p.registerPrefix(lexer.FUNC, p.parseFunctionLiteral)
-	p.registerPrefix(lexer.LPAREN, p.parseLeftParen)
-	p.registerPrefix(lexer.RETURN, p.parseReturnStatement)
-	p.registerPrefix(lexer.IF, p.parseIfStatement)
-	p.registerPrefix(lexer.FOR, p.parseForStatement)
-	p.registerPrefix(lexer.STRING, p.parseStringLiteral)
-	p.registerPrefix(lexer.FLOAT, p.parseFloatLiteral)
-	p.registerPrefix(lexer.LBRACKET, p.parseArrayLiteral)
-	p.registerPrefix(lexer.TRUE, p.parseBooleanLiteral)
-	p.registerPrefix(lexer.FALSE, p.parseBooleanLiteral)
-	p.registerPrefix(lexer.IMPORT, p.parseImport)
-	p.registerPrefix(lexer.STRUCT, p.parseStructLiteral)
+	p.registerPrefix(INT, p.parseIntegerLiteral)
+	p.registerPrefix(IDENT, p.parseIdentifier)
+	p.registerPrefix(FUNC, p.parseFunctionLiteral)
+	p.registerPrefix(LPAREN, p.parseLeftParen)
+	p.registerPrefix(RETURN, p.parseReturnStatement)
+	p.registerPrefix(IF, p.parseIfStatement)
+	p.registerPrefix(FOR, p.parseForStatement)
+	p.registerPrefix(STRING, p.parseStringLiteral)
+	p.registerPrefix(FLOAT, p.parseFloatLiteral)
+	p.registerPrefix(BOOL, p.parseBooleanLiteral)
+	p.registerPrefix(LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(TRUE, p.parseBooleanLiteral)
+	p.registerPrefix(FALSE, p.parseBooleanLiteral)
+	p.registerPrefix(IMPORT, p.parseImport)
 
 	p.nextToken()
 	p.nextToken()
@@ -106,7 +105,7 @@ func NewV1Parser(l lexer.Lexer, debug bool) Parser {
 
 func (p *V1Parser) ParseProgram() []Node {
 	program := []Node{}
-	for !p.curTokenIs(lexer.EOF) {
+	for !p.curTokenIs(EOF) {
 		exp := p.ParseNode(LOWEST)
 		if exp != nil {
 			program = append(program, exp)
@@ -116,11 +115,11 @@ func (p *V1Parser) ParseProgram() []Node {
 	return program
 }
 
-func (p *V1Parser) registerPrefix(tokenType lexer.TokenType, fn prefixParseFn) {
+func (p *V1Parser) registerPrefix(tokenType TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
 
-func (p *V1Parser) registerInfix(tokenType lexer.TokenType, fn infixParseFn) {
+func (p *V1Parser) registerInfix(tokenType TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
 
@@ -142,7 +141,7 @@ func (p *V1Parser) ParseNode(precedence int) Node {
 		return nil
 	}
 	leftExp := prefix()
-	for !p.peekTokenIs(lexer.EOF) && precedence < p.peekPrecedence() {
+	for !p.peekTokenIs(EOF) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
@@ -163,8 +162,8 @@ func (p *V1Parser) parseImport() Node {
 
 	paths := []string{}
 
-	if !p.peekTokenIs(lexer.LPAREN) {
-		if !p.expectPeek(lexer.STRING) {
+	if !p.peekTokenIs(LPAREN) {
+		if !p.expectPeek(STRING) {
 			fmt.Printf("Error: bad import statement on Line: %d", p.peekToken.Line)
 			return nil
 		}
@@ -172,8 +171,8 @@ func (p *V1Parser) parseImport() Node {
 	} else {
 		p.nextToken()
 
-		for !p.peekTokenIs(lexer.RPAREN) {
-			if !p.expectPeek(lexer.STRING) {
+		for !p.peekTokenIs(RPAREN) {
+			if !p.expectPeek(STRING) {
 				fmt.Printf("Error: bad import statement on Line: %d", p.peekToken.Line)
 				return nil
 			}
@@ -202,7 +201,7 @@ func (p *V1Parser) parseImport() Node {
 // parseBooleanLiteral parses the 'true' or 'false' token and creates a BooleanLiteral Node
 func (p *V1Parser) parseBooleanLiteral() Node {
 	literal := &BooleanLiteral{
-		value:  p.curToken.Type == lexer.TRUE,
+		value:  p.curToken.Type == TRUE,
 		Line:   p.curToken.Line,
 		Column: p.curToken.Column,
 	}
@@ -217,7 +216,7 @@ func (p *V1Parser) parseLeftParen() Node {
 
 	p.nextToken()
 
-	if p.peekTokenIs(lexer.IDENT) {
+	if p.peekTokenIs(IDENT) {
 		if p.Debug {
 			fmt.Println("Detected IDENT token")
 		}
@@ -234,21 +233,21 @@ func (p *V1Parser) parseLeftParen() Node {
 
 		p.nextToken()
 
-		for !p.curTokenIs(lexer.RPAREN) && !p.peekTokenIs(lexer.EOF) {
+		for !p.curTokenIs(RPAREN) && !p.peekTokenIs(EOF) {
 			p.nextToken()
 			arg := p.ParseNode(LOWEST)
 			fc.Arguments = append(fc.Arguments, arg)
 
-			if p.peekTokenIs(lexer.COMMA) {
+			if p.peekTokenIs(COMMA) {
 				p.nextToken()
 			}
 
-			if p.curTokenIs(lexer.RPAREN) {
+			if p.curTokenIs(RPAREN) {
 				break
 			}
 		}
 
-		if !p.curTokenIs(lexer.RPAREN) {
+		if !p.curTokenIs(RPAREN) {
 			return nil
 		}
 
@@ -267,7 +266,7 @@ func (p *V1Parser) parseLeftParen() Node {
 		fmt.Printf("Parsed Node: %v\n", expr)
 	}
 
-	if !p.expectPeek(lexer.RPAREN) {
+	if !p.expectPeek(RPAREN) {
 		if p.Debug {
 			fmt.Println("Missing RPAREN token")
 		}
@@ -288,9 +287,6 @@ func (p *V1Parser) parseStringLiteral() Node {
 
 func (p *V1Parser) parseIntegerLiteral() Node {
 	lit := &IntegerLiteral{}
-
-	p.nextToken()
-
 	value, err := strconv.Atoi(p.curToken.Value)
 	if err != nil {
 		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Value)
@@ -317,11 +313,11 @@ func (p *V1Parser) parseFloatLiteral() Node {
 func (p *V1Parser) parseHashLiteral() Node {
 	hash := &HashLiteral{Pairs: make(map[Node]Node)}
 
-	for !p.peekTokenIs(lexer.RBRACE) {
+	for !p.peekTokenIs(RBRACE) {
 		p.nextToken()
 		key := p.ParseNode(LOWEST)
 
-		if !p.expectPeek(lexer.COLON) {
+		if !p.expectPeek(COLON) {
 			return nil
 		}
 
@@ -330,12 +326,12 @@ func (p *V1Parser) parseHashLiteral() Node {
 
 		hash.Pairs[key] = value
 
-		if !p.peekTokenIs(lexer.RBRACE) && !p.expectPeek(lexer.COMMA) {
+		if !p.peekTokenIs(RBRACE) && !p.expectPeek(COMMA) {
 			return nil
 		}
 	}
 
-	if !p.expectPeek(lexer.RBRACE) {
+	if !p.expectPeek(RBRACE) {
 		return nil
 	}
 
@@ -354,7 +350,7 @@ func (p *V1Parser) parseIdentifier() Node {
 		fmt.Printf("Parsed IDENT: %v\n", ident.value)
 	}
 
-	if p.peekTokenIs(lexer.LPAREN) {
+	if p.peekTokenIs(LPAREN) {
 		if p.Debug {
 			fmt.Println("Detected LPAREN token")
 		}
@@ -370,7 +366,7 @@ func (p *V1Parser) parseIdentifier() Node {
 		return fc
 	}
 
-	if p.peekTokenIs(lexer.DOT) {
+	if p.peekTokenIs(DOT) {
 		if p.Debug {
 			fmt.Println("Detected DOT token")
 		}
@@ -380,17 +376,13 @@ func (p *V1Parser) parseIdentifier() Node {
 		return p.parseDotNotation(ident)
 	}
 
-	if p.peekTokenIs(lexer.INC) {
+	if p.peekTokenIs(INC) {
 		p.nextToken()
 		return &IncrementNode{Operand: ident}
 	}
-	if p.peekTokenIs(lexer.DEC) {
+	if p.peekTokenIs(DEC) {
 		p.nextToken()
 		return &DecrementNode{Operand: ident}
-	}
-
-	if p.peekTokenIs(lexer.INT) || p.peekTokenIs(lexer.STRING) || p.peekTokenIs(lexer.FLOAT){
-       
 	}
 
 	if p.Debug {
@@ -438,21 +430,21 @@ func (p *V1Parser) parseFunctionCall(function Node) Node {
 
 	p.nextToken()
 
-	if !p.curTokenIs(lexer.RPAREN) {
+	if !p.curTokenIs(RPAREN) {
 		fc.Arguments = append(fc.Arguments, p.ParseNode(LOWEST))
 
-		for p.peekTokenIs(lexer.COMMA) {
+		for p.peekTokenIs(COMMA) {
 			p.nextToken() // This will consume the comma
 			p.nextToken() // This will move us to the next argument
 			fc.Arguments = append(fc.Arguments, p.ParseNode(LOWEST))
 		}
 
-		if !p.expectPeek(lexer.RPAREN) {
+		if !p.expectPeek(RPAREN) {
 			return nil
 		}
 	}
 
-	if !p.curTokenIs(lexer.RPAREN) {
+	if !p.curTokenIs(RPAREN) {
 		if p.Debug {
 			fmt.Println("Current token is not RPAREN, returning nil")
 		}
@@ -545,12 +537,12 @@ func (p *V1Parser) parseAssignNode(left Node) Node {
 	return Node
 }
 
-func (p *V1Parser) noPrefixParseFnError(t lexer.TokenType) {
-	msg := fmt.Sprintf("no prefix parse function for %s found", lexer.TokenTypeStr[t])
+func (p *V1Parser) noPrefixParseFnError(t TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", TokenTypeStr[t])
 	p.errors = append(p.errors, msg)
 }
 
-func (p *V1Parser) peekTokenIs(t lexer.TokenType) bool {
+func (p *V1Parser) peekTokenIs(t TokenType) bool {
 	return p.peekToken.Type == t
 }
 
@@ -571,39 +563,40 @@ func (p *V1Parser) curPrecedence() int {
 }
 
 func (p *V1Parser) parseFunctionLiteral() Node {
+
+	if p.Debug {
+		fmt.Println("Entering function literal ")
+	}
 	fl := &FunctionLiteral{}
 	p.nextToken()
-	// Check if the current token is an opening parenthesis
-	if p.curTokenIs(lexer.LPAREN) {
-		fl.Name = "_anonymous" // placeholder name for nameless functions we would have to generate a unique name as you can only have 1 nameless function per scope
-	} else {
-		fl.Name = p.curToken.Value
+
+	fl.Name = p.curToken.Value
+
+	p.nextToken()
+
+	if !p.peekTokenIs(RPAREN) && !p.curTokenIs(LBRACE) {
 		p.nextToken()
-	}
-
-	if !p.peekTokenIs(lexer.RPAREN) {
-		for !p.peekTokenIs(lexer.RPAREN) {
+		for !p.peekTokenIs(RPAREN) {
+			fmt.Println(p.curToken.Value)
+			param := &VariableDeclaration{Identifier: &IdentifierLiteral{value: p.curToken.Value}}
 			p.nextToken()
-			param := &IdentifierLiteral{value: p.curToken.Value}
-			fl.Parameters = append(fl.Parameters, param)
+			param.Type = p.curToken
 			p.nextToken()
-			if p.curToken.Type == lexer.COMMA {
-				p.nextToken()
-			}
+			fmt.Println(p.curToken.Value)
+			// p.nextToken()
+			// fl.Parameters = append(fl.Parameters, param)
 		}
+		p.nextToken()
 
-		// final arg
-		param := &IdentifierLiteral{value: p.curToken.Value}
-		fl.Parameters = append(fl.Parameters, param)
 	}
 
 	p.nextToken()
-	p.nextToken() // should be this symbol {
+	p.nextToken()
 
-	for !p.peekTokenIs(lexer.RBRACE) {
-		p.nextToken()
+	for !p.peekTokenIs(RBRACE) && !p.curTokenIs(LBRACE){
+
 		var expr Node
-		if p.curToken.Type == lexer.RETURN {
+		if p.curToken.Type == RETURN {
 			expr = p.parseReturnStatement()
 		} else {
 			expr = p.ParseNode(LOWEST)
@@ -618,14 +611,13 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	} else {
 		fl.Body = append(fl.Body, &ReturnStatement{})
 	}
-
 	return fl
 }
 
 func (p *V1Parser) parseArrayLiteral() Node {
 	array := &ArrayLiteral{}
 
-	if p.peekTokenIs(lexer.RBRACKET) {
+	if p.peekTokenIs(RBRACKET) {
 		p.nextToken()
 		return array
 	}
@@ -633,20 +625,20 @@ func (p *V1Parser) parseArrayLiteral() Node {
 	p.nextToken()
 	array.Elements = append(array.Elements, p.ParseNode(LOWEST))
 
-	for p.peekTokenIs(lexer.COMMA) {
+	for p.peekTokenIs(COMMA) {
 		p.nextToken()
 		p.nextToken()
 		array.Elements = append(array.Elements, p.ParseNode(LOWEST))
 	}
 
-	if !p.expectPeek(lexer.RBRACKET) {
+	if !p.expectPeek(RBRACKET) {
 		return nil
 	}
 
 	return array
 }
 
-func (p *V1Parser) curTokenIs(t lexer.TokenType) bool {
+func (p *V1Parser) curTokenIs(t TokenType) bool {
 	return p.curToken.Type == t
 }
 
@@ -658,7 +650,7 @@ func (p *V1Parser) parseReturnStatement() Node {
 
 	rs.ReturnValue = p.ParseNode(LOWEST)
 
-	if p.peekTokenIs(lexer.SEMICOLON) {
+	if p.peekTokenIs(SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -673,16 +665,16 @@ func (p *V1Parser) parseIfStatement() Node {
 
 	ifExp.Condition = p.ParseNode(LOWEST)
 
-	if !p.expectPeek(lexer.LBRACE) {
+	if !p.expectPeek(LBRACE) {
 		return nil
 	}
 
 	ifExp.Consequence = p.parseBlockStatement().Statements
 
-	if p.peekTokenIs(lexer.ELSE) {
+	if p.peekTokenIs(ELSE) {
 		p.nextToken()
 
-		if !p.expectPeek(lexer.LBRACE) {
+		if !p.expectPeek(LBRACE) {
 			return nil
 		}
 
@@ -697,20 +689,18 @@ func (p *V1Parser) parseForStatement() Node {
 	if p.Debug {
 		fmt.Println("Entering parseForStatement")
 	}
-	p.nextToken()
 
 	forExp := &ForNode{}
 
 	components := []Node{}
 
-	// gathers up all semicolon-delimited Nodes preceding the LBRACE
 	for {
 		components = append(components, p.ParseNode(LOWEST))
 
-		if p.peekTokenIs(lexer.SEMICOLON) {
-			p.nextToken() // whatever ended the Node
-			p.nextToken() // the semicolon
-		} else if p.peekTokenIs(lexer.LBRACE) || p.curTokenIs(lexer.LBRACE) {
+		if p.peekTokenIs(SEMICOLON) {
+			p.nextToken() 
+			p.nextToken() 
+		} else if p.peekTokenIs(LBRACE) || p.curTokenIs(LBRACE) {
 			break
 		} else {
 			// TODO: how do we raise SyntaxError?
@@ -723,7 +713,6 @@ func (p *V1Parser) parseForStatement() Node {
 		return nil
 	}
 
-	// nothing to do if `len(components) == 0`, VM will understand what this means
 	if len(components) == 1 {
 		forExp.Condition = components[0]
 	} else if len(components) == 3 {
@@ -747,7 +736,7 @@ func (p *V1Parser) parseBlockStatement() *BlockStatement {
 
 	p.nextToken()
 
-	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
+	for !p.curTokenIs(RBRACE) && !p.curTokenIs(EOF) {
 		stmt := p.ParseNode(LOWEST)
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
@@ -758,7 +747,7 @@ func (p *V1Parser) parseBlockStatement() *BlockStatement {
 	return block
 }
 
-func (p *V1Parser) expectPeek(t lexer.TokenType) bool {
+func (p *V1Parser) expectPeek(t TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
@@ -767,52 +756,3 @@ func (p *V1Parser) expectPeek(t lexer.TokenType) bool {
 	}
 }
 
-func (p *V1Parser) parseStructLiteral() Node {
-	structLiteral := &StructLiteral{
-		Fields: make(map[string]Node),
-		Line:   p.curToken.Line,
-		Column: p.curToken.Column,
-	}
-
-	if !p.expectPeek(lexer.LBRACE) {
-		return nil
-	}
-
-	p.nextToken()
-
-	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
-		if !p.curTokenIs(lexer.IDENT) {
-			msg := fmt.Sprintf("expected identifier, got %s", p.curToken.Type)
-			p.errors = append(p.errors, msg)
-			return nil
-		}
-
-		fieldName := p.curToken.Value
-
-		if !p.expectPeek(lexer.COLON) {
-			return nil
-		}
-
-		p.nextToken()
-
-		fieldValue := p.ParseNode(LOWEST)
-
-		structLiteral.Fields[fieldName] = fieldValue
-
-		if !p.peekTokenIs(lexer.RBRACE) && !p.expectPeek(lexer.COMMA) {
-			return nil
-		}
-
-		p.nextToken()
-	}
-
-	if !p.curTokenIs(lexer.RBRACE) {
-		msg := fmt.Sprintf("expected }, got %s", p.curToken.Type)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	p.nextToken()
-
-	return structLiteral
-}

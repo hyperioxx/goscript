@@ -1,4 +1,4 @@
-package lexer
+package core
 
 import (
 	"fmt"
@@ -147,12 +147,11 @@ func (l *V1Lexer) NextToken() Token {
 	case ';':
 		tok = newToken(SEMICOLON, ";")
 	case '\n':
-		l.readChar()
 		if l.ch == -1 {
-			return newToken(EOF, "EOF")
+			tok = newToken(EOF, "EOF")
+		} else {
+			tok = newToken(NEWLINE, "\n")
 		}
-
-		return l.NextToken()
 	case '[':
 		tok = newToken(LBRACKET, "[")
 	case ']':
@@ -165,11 +164,11 @@ func (l *V1Lexer) NextToken() Token {
 		tok = newToken(COMMA, ",")
 	case ':':
 		if l.peekChar() == '=' {
-            tok = newToken(ASSIGN_INF, ":=")
-            l.readChar()
-        } else {
-            tok = newToken(COLON, ":")
-        }
+			tok = newToken(ASSIGN_INF, ":=")
+			l.readChar()
+		} else {
+			tok = newToken(COLON, ":")
+		}
 	case '{':
 		tok = newToken(LBRACE, "{")
 	case '}':

@@ -1,4 +1,4 @@
-package lexer
+package core
 
 const (
 	// Special tokens
@@ -13,11 +13,9 @@ const (
 	INT    // int
 	FLOAT  // 123.456
 	STRING // "abc", 'abc'
+	BOOL   // true
 	ARRAY  // [1, 2]
-	STRUCT
-	NUMBER
-
-
+	STRUCT // { a int }
 
 	// Operators
 	ADD         // +
@@ -59,6 +57,7 @@ const (
 
 	// Keywords
 	FUNC
+	VAR
 	CLASS
 	RETURN
 	IF
@@ -80,7 +79,6 @@ var keywordLookup = map[string]TokenType{
 	"if":       IF,
 	"else":     ELSE,
 	"for":      FOR,
-	"forever":  FOREVER, 
 	"break":    BREAK,
 	"continue": CONTINUE,
 	"import":   IMPORT,
@@ -91,6 +89,7 @@ var keywordLookup = map[string]TokenType{
 	"int":      INT,
 	"string":   STRING,
 	"float":    FLOAT,
+	"bool":     BOOL,
 	"struct":   STRUCT,
 	"async":    ASYNC,
 	"await":    AWAIT,
@@ -116,6 +115,7 @@ var TokenTypeStr = map[TokenType]string{
 	FLOAT:       "FLOAT",
 	STRING:      "STRING",
 	ARRAY:       "ARRAY",
+	BOOL:        "BOOL",
 	ADD:         "+",
 	SUB:         "-",
 	MUL:         "*",

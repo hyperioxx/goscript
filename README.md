@@ -1,16 +1,39 @@
+<link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
+<script>
+Prism.languages.goscript = {
+    'comment': /\/\/.*/,
+    'string': /"(?:\\.|[^\\"])*"/,
+    'function': {
+        pattern: /(\bfunc\s+)[a-zA-Z_]\w*(?=\()/,
+        lookbehind: true
+    },
+    'keyword': /\b(?:if|for|return)\b/,
+    'boolean': /\b(?:true|false)\b/,
+    'number': /\b\d+(?:\.\d+)?\b/,
+    'operator': /=/,
+    'punctuation': /[{}[\];(),.:]/
+};
+</script>
+
 # GoScript
 
+GoScript is a dynamically typed, interpreted language created out of curiosity to answer that question we ask as programmers: "How do you make a programming language from scratch?" So, I've given it a try.
 
-GoScript is a unique project initiated during my exploration of Domain Specific Languages (DSLs). The core idea behind GoScript is to develop a statically typed, interpreted language that incorporates the essence of Go (Golang) in terms of syntax and features.
+
+Example syntax:
+<pre><code class="language-goscript">
+// variable declaration
+myInt = 1
+myString = "foo"
+myFloat = 1.0
+myArray = [1,2,3,4,"bar"]
 
 
-Objectives:
 
-- Statically Typed Language: Ensuring type safety and minimizing runtime errors by incorporating static typing, a key aspect of languages like Go.
-
-- Interpreted with Performance: Striking a balance between being an interpreted language and maintaining performance on par with other languages in its category.
-
-- Golang-Inspired Syntax and Features: Adopting a syntax and feature set that resonates with Golang, making it familiar and intuitive for those accustomed to Golang.
-
-- Compiler and Virtual Machine Integration: Similar to Python, GoScript is designed with its own compiler and virtual machine, facilitating efficient execution and offering flexibility in usage.
+// conditionals
+if myInt > 1 {
+    print(x) // builtin function 
+}
+</code></pre>
 

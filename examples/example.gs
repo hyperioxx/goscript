@@ -1,8 +1,12 @@
-// func add(x int, y int) int {
-//   return x + y
-//}
+// variable declaration
+myInt = 1
+myString = "foo"
+myFloat = 1.0
+myArray = [1,2,3,4,"bar"]
 
-x int = 1
-y int = 100
 
-result := x + y
+
+// conditionals
+if myInt > 1 {
+    print(x) // builtin function 
+}

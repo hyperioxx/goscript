@@ -1,4 +1,4 @@
-package virtualmachine
+package core
 
 import (
 	"fmt"
@@ -497,7 +497,6 @@ func (m Map) String() Object {
 type Function struct {
 	Name       string
 	Parameters []string
-	Body       []Instruction
 }
 
 func (f *Function) Type() string {
@@ -507,8 +506,7 @@ func (f *Function) Type() string {
 func (f *Function) Value() interface{} {
 	return struct {
 		parameters []string
-		Body       []Instruction
-	}{f.Parameters, f.Body}
+	}{f.Parameters}
 }
 
 func (f *Function) GetName() string {
@@ -564,7 +562,6 @@ func (f *Function) LessThanOrEqual(other Object) (Object, error) {
 }
 
 func (f *Function) Call(args []Object) (Object, error) {
-
 	return nil, fmt.Errorf("currently not supported")
 }
 

@@ -1,11 +1,10 @@
-package parser
+package core
 
 import (
 	"bytes"
 	"fmt"
 	"strings"
 
-	"github.com/hyperioxx/goscript/pkg/core/lexer"
 )
 
 type Node interface {
@@ -135,7 +134,7 @@ func (fc *FunctionCall) GetColumn() int {
 
 type FunctionLiteral struct {
 	Name       string
-	Parameters []*IdentifierLiteral
+	Parameters []*VariableDeclaration
 	Body       []Node
 	Line       int
 	Column     int
@@ -379,7 +378,7 @@ func NewPrefixNode(operator string, right Node, line, column int) *PrefixNode {
 	}
 }
 
-func NewFunctionLiteral(name string, parameters []*IdentifierLiteral, body []Node, line, column int) *FunctionLiteral {
+func NewFunctionLiteral(name string, parameters []*VariableDeclaration, body []Node, line, column int) *FunctionLiteral {
 	return &FunctionLiteral{
 		Name:       name,
 		Parameters: parameters,
@@ -452,31 +451,31 @@ func (bl *BooleanLiteral) GetColumn() int {
 	return bl.Column
 }
 
-type Module struct {
+type ModuleLiteral struct {
 	Name   string
 	Nodes  []Node
 	Line   int
 	Column int
 }
 
-func (m *Module) String() string {
+func (m *ModuleLiteral) String() string {
 	return m.Name
 }
 
-func (m *Module) Value() interface{} {
+func (m *ModuleLiteral) Value() interface{} {
 	return m.Nodes
 }
 
-func (m *Module) GetLine() int {
+func (m *ModuleLiteral) GetLine() int {
 	return m.Line
 }
 
-func (m *Module) GetColumn() int {
+func (m *ModuleLiteral) GetColumn() int {
 	return m.Column
 }
 
-func NewModule(name string, Nodes []Node, line, column int) *Module {
-	return &Module{
+func NewModuleLiteral(name string, Nodes []Node, line, column int) *ModuleLiteral {
+	return &ModuleLiteral{
 		Name:   name,
 		Nodes:  Nodes,
 		Line:   line,
@@ -600,17 +599,16 @@ func (sl *StructLiteral) GetColumn() int {
 }
 
 type VariableDeclaration struct {
-    Identifier *IdentifierLiteral
-    Type       lexer.Token
-    Line       int
-    Column     int
+	Identifier *IdentifierLiteral
+	Type       Token
+	Line       int
+	Column     int
 }
 
 func (vd *VariableDeclaration) String() string {
-    return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
+	return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
 }
 
 func (vd *VariableDeclaration) Value() interface{} { return vd }
 func (vd *VariableDeclaration) GetLine() int       { return vd.Line }
 func (vd *VariableDeclaration) GetColumn() int     { return vd.Column }
-
