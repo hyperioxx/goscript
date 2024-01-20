@@ -1,7 +1,12 @@
+// variable declaration
+myInt = 1
+myString = "foo"
+myFloat = 1.0
+myArray = [1,2,3,4,"bar"]
 
 
-x int
-x int
 
-x = "test"
-1+1
+// conditionals
+if myInt > 1 {
+    print(x) // builtin function 
+}
