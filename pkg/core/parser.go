@@ -96,7 +96,6 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	p.registerPrefix(TRUE, p.parseBooleanLiteral)
 	p.registerPrefix(FALSE, p.parseBooleanLiteral)
 	p.registerPrefix(IMPORT, p.parseImport)
-	p.registerPrefix(STRUCT, p.parseStructLiteral)
 
 	p.nextToken()
 	p.nextToken()
@@ -351,12 +350,6 @@ func (p *V1Parser) parseIdentifier() Node {
 		fmt.Printf("Parsed IDENT: %v\n", ident.value)
 	}
 
-	if p.peekTokenIs(INT) || p.peekTokenIs(STRING) || p.peekTokenIs(FLOAT) || p.peekTokenIs(BOOL) || p.peekTokenIs(STRUCT) {
-		p.nextToken()
-		defer p.nextToken()
-		return &VariableDeclaration{Identifier: ident, Type: p.curToken}
-	}
-
 	if p.peekTokenIs(LPAREN) {
 		if p.Debug {
 			fmt.Println("Detected LPAREN token")
@@ -581,9 +574,7 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 
 	p.nextToken()
 
-	fmt.Println(TokenTypeStr[p.curToken.Type])
-
-	if !p.peekTokenIs(RPAREN) {
+	if !p.peekTokenIs(RPAREN) && !p.curTokenIs(LBRACE) {
 		p.nextToken()
 		for !p.peekTokenIs(RPAREN) {
 			fmt.Println(p.curToken.Value)
@@ -593,7 +584,7 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 			p.nextToken()
 			fmt.Println(p.curToken.Value)
 			// p.nextToken()
-			// // fl.Parameters = append(fl.Parameters, param)
+			// fl.Parameters = append(fl.Parameters, param)
 		}
 		p.nextToken()
 
@@ -602,7 +593,7 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	p.nextToken()
 	p.nextToken()
 
-	for !p.peekTokenIs(RBRACE) {
+	for !p.peekTokenIs(RBRACE) && !p.curTokenIs(LBRACE){
 
 		var expr Node
 		if p.curToken.Type == RETURN {
@@ -620,7 +611,6 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	} else {
 		fl.Body = append(fl.Body, &ReturnStatement{})
 	}
-	fmt.Println("Exit function literal")
 	return fl
 }
 
@@ -699,19 +689,17 @@ func (p *V1Parser) parseForStatement() Node {
 	if p.Debug {
 		fmt.Println("Entering parseForStatement")
 	}
-	p.nextToken()
 
 	forExp := &ForNode{}
 
 	components := []Node{}
 
-	// gathers up all semicolon-delimited Nodes preceding the LBRACE
 	for {
 		components = append(components, p.ParseNode(LOWEST))
 
 		if p.peekTokenIs(SEMICOLON) {
-			p.nextToken() // whatever ended the Node
-			p.nextToken() // the semicolon
+			p.nextToken() 
+			p.nextToken() 
 		} else if p.peekTokenIs(LBRACE) || p.curTokenIs(LBRACE) {
 			break
 		} else {
@@ -725,7 +713,6 @@ func (p *V1Parser) parseForStatement() Node {
 		return nil
 	}
 
-	// nothing to do if `len(components) == 0`, VM will understand what this means
 	if len(components) == 1 {
 		forExp.Condition = components[0]
 	} else if len(components) == 3 {
@@ -769,52 +756,3 @@ func (p *V1Parser) expectPeek(t TokenType) bool {
 	}
 }
 
-func (p *V1Parser) parseStructLiteral() Node {
-	structLiteral := &StructLiteral{
-		Fields: make(map[string]Node),
-		Line:   p.curToken.Line,
-		Column: p.curToken.Column,
-	}
-
-	if !p.expectPeek(LBRACE) {
-		return nil
-	}
-
-	p.nextToken()
-
-	for !p.curTokenIs(RBRACE) && !p.curTokenIs(EOF) {
-		if !p.curTokenIs(IDENT) {
-			msg := fmt.Sprintf("expected identifier, got %s", p.curToken.Type)
-			p.errors = append(p.errors, msg)
-			return nil
-		}
-
-		fieldName := p.curToken.Value
-
-		if !p.expectPeek(COLON) {
-			return nil
-		}
-
-		p.nextToken()
-
-		fieldValue := p.ParseNode(LOWEST)
-
-		structLiteral.Fields[fieldName] = fieldValue
-
-		if !p.peekTokenIs(RBRACE) && !p.expectPeek(COMMA) {
-			return nil
-		}
-
-		p.nextToken()
-	}
-
-	if !p.curTokenIs(RBRACE) {
-		msg := fmt.Sprintf("expected }, got %s", p.curToken.Type)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	p.nextToken()
-
-	return structLiteral
-}

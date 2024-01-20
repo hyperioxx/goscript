@@ -562,7 +562,6 @@ func (f *Function) LessThanOrEqual(other Object) (Object, error) {
 }
 
 func (f *Function) Call(args []Object) (Object, error) {
-
 	return nil, fmt.Errorf("currently not supported")
 }
 
