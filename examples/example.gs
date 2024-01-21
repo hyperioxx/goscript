@@ -8,3 +8,9 @@ myArray = [1,2,3,4,"bar"]
 if myInt > 1 {
     print(x) // builtin function 
 }
+
+func a() {
+    return
+}
+
+a()

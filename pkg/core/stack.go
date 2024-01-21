@@ -1,10 +1,9 @@
 package core
 
-
 const CALL_STACK_SIZE = 10000
 
 type Frame struct {
-	scope    map[string]Object
+	scope map[string]Object
 }
 
 func NewFrame() *Frame {

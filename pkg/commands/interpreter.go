@@ -27,7 +27,7 @@ func (i *Interpreter) Execute(args []string) error {
 	i.printSystemInfo()
 	scanner := bufio.NewScanner(os.Stdin)
 	e := core.NewEvaluator(*i.debugFlag)
-	
+
 	var multiLine string
 	isMultiLine := false
 	prompt := ">> "
@@ -70,7 +70,7 @@ func (i *Interpreter) Execute(args []string) error {
 			fmt.Println(err)
 			return nil
 		}
-        for _, exp := range program {
+		for _, exp := range program {
 			value, err := e.Evaluate(exp)
 			if err != nil {
 				fmt.Println(err)

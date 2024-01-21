@@ -304,8 +304,6 @@ func (p *V1Parser) parseIntegerLiteral() (Node, error) {
 	lit := &IntegerLiteral{}
 	value, err := strconv.Atoi(p.curToken.Value)
 	if err != nil {
-		// msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Value)
-		// p.errors = append(p.errors, msg)
 		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
@@ -317,8 +315,6 @@ func (p *V1Parser) parseIntegerLiteral() (Node, error) {
 func (p *V1Parser) parseFloatLiteral() (Node, error) {
 	value, err := strconv.ParseFloat(p.curToken.Value, 64)
 	if err != nil {
-		// msg := fmt.Sprintf("could not parse %q as float", p.curToken.Value)
-		// p.errors = append(p.errors, msg)
 		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
@@ -583,10 +579,8 @@ func (p *V1Parser) parseAssignNode(left Node) (Node, error) {
 
 	right, err := p.ParseNode(precedence)
 	if err != nil {
-		fmt.Println("HERE")
 		return nil, err
 	}
-	fmt.Println("HERE2")
 	Node.Right = right
 	return Node, nil
 }
@@ -675,7 +669,7 @@ func (p *V1Parser) parseFunctionLiteral() (Node, error) {
 	return fl, nil
 }
 
-func (p *V1Parser) parseArrayLiteral() (Node, error){
+func (p *V1Parser) parseArrayLiteral() (Node, error) {
 	array := &ArrayLiteral{}
 
 	if p.peekTokenIs(RBRACKET) {
@@ -684,7 +678,7 @@ func (p *V1Parser) parseArrayLiteral() (Node, error){
 	}
 
 	p.nextToken()
-	node, err :=p.ParseNode(LOWEST)
+	node, err := p.ParseNode(LOWEST)
 	if err != nil {
 		return nil, err
 	}
@@ -694,7 +688,7 @@ func (p *V1Parser) parseArrayLiteral() (Node, error){
 		p.nextToken()
 		p.nextToken()
 		node, err = p.ParseNode(LOWEST)
-        if err != nil {
+		if err != nil {
 			return nil, err
 		}
 		array.Elements = append(array.Elements, node)
@@ -711,14 +705,14 @@ func (p *V1Parser) curTokenIs(t TokenType) bool {
 	return p.curToken.Type == t
 }
 
-func (p *V1Parser) parseReturnStatement() (Node, error){
+func (p *V1Parser) parseReturnStatement() (Node, error) {
 
 	p.nextToken()
 
 	rs := &ReturnStatement{}
 
 	node, err := p.ParseNode(LOWEST)
-    if err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -738,10 +732,12 @@ func (p *V1Parser) parseIfStatement() (Node, error) {
 	ifExp := &IfNode{}
 
 	condition, err := p.ParseNode(LOWEST)
-    if err != nil {
+	if err != nil {
 		return nil, err
 	}
+
 	ifExp.Condition = condition
+	// TODO: check if condition operator is logical
 
 	if !p.expectPeek(LBRACE) {
 		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
@@ -759,7 +755,7 @@ func (p *V1Parser) parseIfStatement() (Node, error) {
 		if !p.expectPeek(LBRACE) {
 			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
-        block, err := p.parseBlockStatement()
+		block, err := p.parseBlockStatement()
 		if err != nil {
 			return nil, err
 		}
@@ -822,7 +818,7 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 	return forExp, nil
 }
 
-func (p *V1Parser) parseBlockStatement() (*BlockStatement, error){
+func (p *V1Parser) parseBlockStatement() (*BlockStatement, error) {
 	block := &BlockStatement{}
 	block.Statements = []Node{}
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
-
 )
 
 type Node interface {
