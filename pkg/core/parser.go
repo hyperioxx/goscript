@@ -3,8 +3,9 @@ package core
 import (
 	"fmt"
 	"strconv"
-
 )
+
+const SYNTAX_ERROR_MSG = "syntax error on line: %d"
 
 const (
 	_ int = iota
@@ -38,8 +39,8 @@ var precedences = map[TokenType]int{
 }
 
 type Parser interface {
-	ParseProgram() []Node
-	ParseNode(int) Node
+	ParseProgram() ([]Node, error)
+	ParseNode(int) (Node, error)
 }
 
 type V1Parser struct {
@@ -55,8 +56,8 @@ type V1Parser struct {
 }
 
 type (
-	prefixParseFn func() Node
-	infixParseFn  func(Node) Node
+	prefixParseFn func() (Node, error)
+	infixParseFn  func(Node) (Node, error)
 )
 
 func NewV1Parser(l Lexer, debug bool) Parser {
@@ -103,16 +104,19 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	return p
 }
 
-func (p *V1Parser) ParseProgram() []Node {
+func (p *V1Parser) ParseProgram() ([]Node, error) {
 	program := []Node{}
 	for !p.curTokenIs(EOF) {
-		exp := p.ParseNode(LOWEST)
+		exp, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, err
+		}
 		if exp != nil {
 			program = append(program, exp)
 		}
 		p.nextToken()
 	}
-	return program
+	return program, nil
 }
 
 func (p *V1Parser) registerPrefix(tokenType TokenType, fn prefixParseFn) {
@@ -131,31 +135,33 @@ func (p *V1Parser) nextToken() {
 	p.peekToken = p.l.NextToken()
 }
 
-func (p *V1Parser) ParseNode(precedence int) Node {
+func (p *V1Parser) ParseNode(precedence int) (Node, error) {
 	if p.Debug {
 		fmt.Printf("DEBUG: ParseNode(): Precedence: %d, Current Token: %+v\n", precedence, p.curToken)
 	}
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
-		p.noPrefixParseFnError(p.curToken.Type)
-		return nil
+		return nil, nil
 	}
-	leftExp := prefix()
+	leftExp, err := prefix()
+	if err != nil {
+		return nil, err
+	}
 	for !p.peekTokenIs(EOF) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
-			return leftExp
+			return leftExp, nil
 		}
 
 		p.nextToken()
 
-		leftExp = infix(leftExp)
+		leftExp, err = infix(leftExp)
 	}
 
-	return leftExp
+	return leftExp, err
 }
 
-func (p *V1Parser) parseImport() Node {
+func (p *V1Parser) parseImport() (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseImport")
 	}
@@ -164,8 +170,7 @@ func (p *V1Parser) parseImport() Node {
 
 	if !p.peekTokenIs(LPAREN) {
 		if !p.expectPeek(STRING) {
-			fmt.Printf("Error: bad import statement on Line: %d", p.peekToken.Line)
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 		paths = append(paths, p.curToken.Value)
 	} else {
@@ -173,8 +178,7 @@ func (p *V1Parser) parseImport() Node {
 
 		for !p.peekTokenIs(RPAREN) {
 			if !p.expectPeek(STRING) {
-				fmt.Printf("Error: bad import statement on Line: %d", p.peekToken.Line)
-				return nil
+				return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 			}
 			paths = append(paths, p.curToken.Value)
 			p.nextToken()
@@ -195,21 +199,21 @@ func (p *V1Parser) parseImport() Node {
 		fmt.Println("Exiting parseImport")
 	}
 
-	return moduleListNode
+	return moduleListNode, nil
 }
 
 // parseBooleanLiteral parses the 'true' or 'false' token and creates a BooleanLiteral Node
-func (p *V1Parser) parseBooleanLiteral() Node {
+func (p *V1Parser) parseBooleanLiteral() (Node, error) {
 	literal := &BooleanLiteral{
 		value:  p.curToken.Type == TRUE,
 		Line:   p.curToken.Line,
 		Column: p.curToken.Column,
 	}
 	p.nextToken()
-	return literal
+	return literal, nil
 }
 
-func (p *V1Parser) parseLeftParen() Node {
+func (p *V1Parser) parseLeftParen() (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseLeftParen")
 	}
@@ -221,13 +225,17 @@ func (p *V1Parser) parseLeftParen() Node {
 			fmt.Println("Detected IDENT token")
 		}
 
-		ident := p.parseIdentifier().(*IdentifierLiteral)
+		ident, err := p.parseIdentifier()
+		if err != nil {
+			return nil, err
+		}
+
 		if p.Debug {
-			fmt.Printf("Parsed IDENT: %v\n", ident.value)
+			fmt.Printf("Parsed IDENT: %v\n", ident.Value())
 		}
 
 		fc := &FunctionCall{
-			Name:      ident.value,
+			Name:      ident.Value().(string),
 			Arguments: []Node{},
 		}
 
@@ -235,7 +243,11 @@ func (p *V1Parser) parseLeftParen() Node {
 
 		for !p.curTokenIs(RPAREN) && !p.peekTokenIs(EOF) {
 			p.nextToken()
-			arg := p.ParseNode(LOWEST)
+			arg, err := p.ParseNode(LOWEST)
+			if err != nil {
+				return nil, err
+			}
+
 			fc.Arguments = append(fc.Arguments, arg)
 
 			if p.peekTokenIs(COMMA) {
@@ -248,7 +260,7 @@ func (p *V1Parser) parseLeftParen() Node {
 		}
 
 		if !p.curTokenIs(RPAREN) {
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 
 		p.nextToken()
@@ -257,10 +269,13 @@ func (p *V1Parser) parseLeftParen() Node {
 			fmt.Println("Exiting parseLeftParen with function call")
 		}
 
-		return fc
+		return fc, nil
 	}
 
-	expr := p.ParseNode(LOWEST)
+	expr, err := p.ParseNode(LOWEST)
+	if err != nil {
+		return nil, err
+	}
 
 	if p.Debug {
 		fmt.Printf("Parsed Node: %v\n", expr)
@@ -271,74 +286,80 @@ func (p *V1Parser) parseLeftParen() Node {
 			fmt.Println("Missing RPAREN token")
 		}
 
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
 	if p.Debug {
 		fmt.Println("Exiting parseLeftParen with Node")
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *V1Parser) parseStringLiteral() Node {
-	return &StringLiteral{value: p.curToken.Value}
+func (p *V1Parser) parseStringLiteral() (Node, error) {
+	return &StringLiteral{value: p.curToken.Value}, nil
 }
 
-func (p *V1Parser) parseIntegerLiteral() Node {
+func (p *V1Parser) parseIntegerLiteral() (Node, error) {
 	lit := &IntegerLiteral{}
 	value, err := strconv.Atoi(p.curToken.Value)
 	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Value)
-		p.errors = append(p.errors, msg)
-		return nil
+		// msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Value)
+		// p.errors = append(p.errors, msg)
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
 	lit.value = value
 
-	return lit
+	return lit, nil
 }
 
-func (p *V1Parser) parseFloatLiteral() Node {
+func (p *V1Parser) parseFloatLiteral() (Node, error) {
 	value, err := strconv.ParseFloat(p.curToken.Value, 64)
 	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as float", p.curToken.Value)
-		p.errors = append(p.errors, msg)
-		return nil
+		// msg := fmt.Sprintf("could not parse %q as float", p.curToken.Value)
+		// p.errors = append(p.errors, msg)
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
-	return &FloatLiteral{value: value}
+	return &FloatLiteral{value: value}, nil
 }
 
-func (p *V1Parser) parseHashLiteral() Node {
+func (p *V1Parser) parseHashLiteral() (Node, error) {
 	hash := &HashLiteral{Pairs: make(map[Node]Node)}
 
 	for !p.peekTokenIs(RBRACE) {
 		p.nextToken()
-		key := p.ParseNode(LOWEST)
+		key, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+		}
 
 		if !p.expectPeek(COLON) {
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 
 		p.nextToken()
-		value := p.ParseNode(LOWEST)
+		value, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, err
+		}
 
 		hash.Pairs[key] = value
 
 		if !p.peekTokenIs(RBRACE) && !p.expectPeek(COMMA) {
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 	}
 
 	if !p.expectPeek(RBRACE) {
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
-	return hash
+	return hash, nil
 }
 
-func (p *V1Parser) parseIdentifier() Node {
+func (p *V1Parser) parseIdentifier() (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseIdentifier")
 	}
@@ -356,68 +377,72 @@ func (p *V1Parser) parseIdentifier() Node {
 		}
 
 		p.nextToken()
-		fc := p.parseFunctionCall(ident)
+		fc, err := p.parseFunctionCall(ident)
+
+		if err != nil {
+			return nil, err
+		}
 
 		if p.Debug {
 			fmt.Printf("Parsed function call: %v\n", fc)
 			fmt.Println("Exiting parseIdentifier with function call")
 		}
 
-		return fc
+		return fc, nil
 	}
 
-	if p.peekTokenIs(DOT) {
-		if p.Debug {
-			fmt.Println("Detected DOT token")
-		}
+	// if p.peekTokenIs(DOT) {
+	// 	if p.Debug {
+	// 		fmt.Println("Detected DOT token")
+	// 	}
 
-		// Note: Here, instead of nextToken(), we're using a new function parseDotNotation()
-		// which will handle the parsing of everything following the DOT.
-		return p.parseDotNotation(ident)
-	}
+	// 	// Note: Here, instead of nextToken(), we're using a new function parseDotNotation()
+	// 	// which will handle the parsing of everything following the DOT.
+	// 	return p.parseDotNotation(ident)
+	// }
 
 	if p.peekTokenIs(INC) {
 		p.nextToken()
-		return &IncrementNode{Operand: ident}
+		return &IncrementNode{Operand: ident}, nil
 	}
 	if p.peekTokenIs(DEC) {
 		p.nextToken()
-		return &DecrementNode{Operand: ident}
+		return &DecrementNode{Operand: ident}, nil
 	}
 
 	if p.Debug {
 		fmt.Println("Exiting parseIdentifier with ident")
 	}
 
-	return ident
+	return ident, nil
 }
 
-func (p *V1Parser) parseDotNotation(left Node) Node {
-	if p.Debug {
-		fmt.Println("Entering parseDotNotation")
-	}
+// func (p *V1Parser) parseDotNotation(left Node) Node {
+// 	if p.Debug {
+// 		fmt.Println("Entering parseDotNotation")
+// 	}
 
-	// Advancing past the DOT token
-	p.nextToken()
+// 	// Advancing past the DOT token
+// 	p.nextToken()
 
-	// Creating a new DotNotationNode with the left part (before the dot)
-	// and the right part (the next identifier after the dot)
-	dotNotationNode := &DotNotationNode{
-		Left:   left,
-		Right:  p.parseIdentifier(),
-		Line:   left.GetLine(),
-		Column: left.GetColumn(),
-	}
+// 	// Creating a new DotNotationNode with the left part (before the dot)
+// 	// and the right part (the next identifier after the dot)
+// 	dotNotationNode := &DotNotationNode{
+// 		Left:   left,
+// 		Right:  p.parseIdentifier(),
+// 		Line:   left.GetLine(),
+// 		Column: left.GetColumn(),
+// 	}
 
-	if p.Debug {
-		fmt.Printf("Parsed DotNotation: %v\n", dotNotationNode)
-		fmt.Println("Exiting parseDotNotation with DotNotationNode")
-	}
+// 	if p.Debug {
+// 		fmt.Printf("Parsed DotNotation: %v\n", dotNotationNode)
+// 		fmt.Println("Exiting parseDotNotation with DotNotationNode")
+// 	}
 
-	return dotNotationNode
-}
+// 	return dotNotationNode
+// }
 
-func (p *V1Parser) parseFunctionCall(function Node) Node {
+func (p *V1Parser) parseFunctionCall(function Node) (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseFunctionCall")
 		fmt.Printf("Function: %v\n", function)
@@ -431,16 +456,24 @@ func (p *V1Parser) parseFunctionCall(function Node) Node {
 	p.nextToken()
 
 	if !p.curTokenIs(RPAREN) {
-		fc.Arguments = append(fc.Arguments, p.ParseNode(LOWEST))
+		node, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+		}
+		fc.Arguments = append(fc.Arguments, node)
 
 		for p.peekTokenIs(COMMA) {
 			p.nextToken() // This will consume the comma
 			p.nextToken() // This will move us to the next argument
-			fc.Arguments = append(fc.Arguments, p.ParseNode(LOWEST))
+			node, err := p.ParseNode(LOWEST)
+			if err != nil {
+				return nil, err
+			}
+			fc.Arguments = append(fc.Arguments, node)
 		}
 
 		if !p.expectPeek(RPAREN) {
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 	}
 
@@ -448,7 +481,7 @@ func (p *V1Parser) parseFunctionCall(function Node) Node {
 		if p.Debug {
 			fmt.Println("Current token is not RPAREN, returning nil")
 		}
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
 	if p.Debug {
@@ -461,10 +494,10 @@ func (p *V1Parser) parseFunctionCall(function Node) Node {
 		fmt.Println("Exiting parseFunctionCall")
 	}
 
-	return fc
+	return fc, nil
 }
 
-func (p *V1Parser) parseInfixNode(left Node) Node {
+func (p *V1Parser) parseInfixNode(left Node) (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseInfixNode")
 		fmt.Printf("Left Node: %v\n", left)
@@ -488,29 +521,41 @@ func (p *V1Parser) parseInfixNode(left Node) Node {
 		fmt.Println("Parsing Right Node")
 	}
 
-	Node.Right = p.ParseNode(precedence)
+	right, err := p.ParseNode(precedence)
+
+	if err != nil {
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+	}
+
+	Node.Right = right
 
 	if p.Debug {
 		fmt.Printf("Right Node: %v\n", Node.Right)
 		fmt.Println("Exiting parseInfixNode")
 	}
 
-	return Node
+	return Node, nil
 }
 
-func (p *V1Parser) parsePrefixNode() Node {
+func (p *V1Parser) parsePrefixNode() (Node, error) {
 	Node := &PrefixNode{
 		Operator: p.curToken.Value,
 	}
 
 	p.nextToken()
 
-	Node.Right = p.ParseNode(PREFIX)
+	right, err := p.ParseNode(PREFIX)
 
-	return Node
+	if err != nil {
+		return nil, err
+	}
+
+	Node.Right = right
+
+	return Node, nil
 }
 
-func (p *V1Parser) parseEqualityInequalityNode(left Node) Node {
+func (p *V1Parser) parseEqualityInequalityNode(left Node) (Node, error) {
 	Node := &InfixNode{
 		Left:     left,
 		Operator: p.curToken.Value,
@@ -518,12 +563,16 @@ func (p *V1Parser) parseEqualityInequalityNode(left Node) Node {
 
 	precedence := p.curPrecedence()
 	p.nextToken()
-	Node.Right = p.ParseNode(precedence)
+	right, err := p.ParseNode(precedence)
+	if err != nil {
+		return nil, err
+	}
+	Node.Right = right
 
-	return Node
+	return Node, nil
 }
 
-func (p *V1Parser) parseAssignNode(left Node) Node {
+func (p *V1Parser) parseAssignNode(left Node) (Node, error) {
 	Node := &InfixNode{
 		Left:     left,
 		Operator: p.curToken.Value,
@@ -532,9 +581,14 @@ func (p *V1Parser) parseAssignNode(left Node) Node {
 	precedence := p.curPrecedence()
 	p.nextToken()
 
-	Node.Right = p.ParseNode(precedence)
-
-	return Node
+	right, err := p.ParseNode(precedence)
+	if err != nil {
+		fmt.Println("HERE")
+		return nil, err
+	}
+	fmt.Println("HERE2")
+	Node.Right = right
+	return Node, nil
 }
 
 func (p *V1Parser) noPrefixParseFnError(t TokenType) {
@@ -562,7 +616,7 @@ func (p *V1Parser) curPrecedence() int {
 	return LOWEST
 }
 
-func (p *V1Parser) parseFunctionLiteral() Node {
+func (p *V1Parser) parseFunctionLiteral() (Node, error) {
 
 	if p.Debug {
 		fmt.Println("Entering function literal ")
@@ -593,13 +647,20 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	p.nextToken()
 	p.nextToken()
 
-	for !p.peekTokenIs(RBRACE) && !p.curTokenIs(LBRACE){
+	for !p.peekTokenIs(RBRACE) && !p.curTokenIs(LBRACE) {
 
 		var expr Node
+		var err error
 		if p.curToken.Type == RETURN {
-			expr = p.parseReturnStatement()
+			expr, err = p.parseReturnStatement()
+			if err != nil {
+				return nil, err
+			}
 		} else {
-			expr = p.ParseNode(LOWEST)
+			expr, err = p.ParseNode(LOWEST)
+			if err != nil {
+				return nil, err
+			}
 		}
 		fl.Body = append(fl.Body, expr)
 	}
@@ -611,80 +672,104 @@ func (p *V1Parser) parseFunctionLiteral() Node {
 	} else {
 		fl.Body = append(fl.Body, &ReturnStatement{})
 	}
-	return fl
+	return fl, nil
 }
 
-func (p *V1Parser) parseArrayLiteral() Node {
+func (p *V1Parser) parseArrayLiteral() (Node, error){
 	array := &ArrayLiteral{}
 
 	if p.peekTokenIs(RBRACKET) {
 		p.nextToken()
-		return array
+		return array, nil
 	}
 
 	p.nextToken()
-	array.Elements = append(array.Elements, p.ParseNode(LOWEST))
+	node, err :=p.ParseNode(LOWEST)
+	if err != nil {
+		return nil, err
+	}
+	array.Elements = append(array.Elements, node)
 
 	for p.peekTokenIs(COMMA) {
 		p.nextToken()
 		p.nextToken()
-		array.Elements = append(array.Elements, p.ParseNode(LOWEST))
+		node, err = p.ParseNode(LOWEST)
+        if err != nil {
+			return nil, err
+		}
+		array.Elements = append(array.Elements, node)
 	}
 
 	if !p.expectPeek(RBRACKET) {
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
-	return array
+	return array, nil
 }
 
 func (p *V1Parser) curTokenIs(t TokenType) bool {
 	return p.curToken.Type == t
 }
 
-func (p *V1Parser) parseReturnStatement() Node {
+func (p *V1Parser) parseReturnStatement() (Node, error){
 
 	p.nextToken()
 
 	rs := &ReturnStatement{}
 
-	rs.ReturnValue = p.ParseNode(LOWEST)
+	node, err := p.ParseNode(LOWEST)
+    if err != nil {
+		return nil, err
+	}
+
+	rs.ReturnValue = node
 
 	if p.peekTokenIs(SEMICOLON) {
 		p.nextToken()
 	}
 
-	return rs
+	return rs, nil
 }
 
-func (p *V1Parser) parseIfStatement() Node {
+func (p *V1Parser) parseIfStatement() (Node, error) {
 
 	p.nextToken()
 
 	ifExp := &IfNode{}
 
-	ifExp.Condition = p.ParseNode(LOWEST)
+	condition, err := p.ParseNode(LOWEST)
+    if err != nil {
+		return nil, err
+	}
+	ifExp.Condition = condition
 
 	if !p.expectPeek(LBRACE) {
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
-	ifExp.Consequence = p.parseBlockStatement().Statements
+	block, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+	ifExp.Consequence = block.Statements
 
 	if p.peekTokenIs(ELSE) {
 		p.nextToken()
 
 		if !p.expectPeek(LBRACE) {
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
-
-		ifExp.Alternative = p.parseBlockStatement().Statements
+        block, err := p.parseBlockStatement()
+		if err != nil {
+			return nil, err
+		}
+		ifExp.Alternative = block.Statements
 	}
 
-	return ifExp
+	return ifExp, nil
 }
 
-func (p *V1Parser) parseForStatement() Node {
+func (p *V1Parser) parseForStatement() (Node, error) {
 
 	if p.Debug {
 		fmt.Println("Entering parseForStatement")
@@ -695,22 +780,25 @@ func (p *V1Parser) parseForStatement() Node {
 	components := []Node{}
 
 	for {
-		components = append(components, p.ParseNode(LOWEST))
+		node, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		components = append(components, node)
 
 		if p.peekTokenIs(SEMICOLON) {
-			p.nextToken() 
-			p.nextToken() 
+			p.nextToken()
+			p.nextToken()
 		} else if p.peekTokenIs(LBRACE) || p.curTokenIs(LBRACE) {
 			break
 		} else {
-			// TODO: how do we raise SyntaxError?
-			return nil
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 	}
 
 	if len(components) == 2 || len(components) > 3 {
-		// TODO: how do we raise SyntaxError?
-		return nil
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
 
 	if len(components) == 1 {
@@ -721,30 +809,37 @@ func (p *V1Parser) parseForStatement() Node {
 		forExp.Updater = components[2]
 	}
 
-	forExp.Body = p.parseBlockStatement().Statements
+	block, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+	forExp.Body = block.Statements
 
 	if p.Debug {
 		fmt.Println("Exiting parseForStatement")
 	}
 
-	return forExp
+	return forExp, nil
 }
 
-func (p *V1Parser) parseBlockStatement() *BlockStatement {
+func (p *V1Parser) parseBlockStatement() (*BlockStatement, error){
 	block := &BlockStatement{}
 	block.Statements = []Node{}
 
 	p.nextToken()
 
 	for !p.curTokenIs(RBRACE) && !p.curTokenIs(EOF) {
-		stmt := p.ParseNode(LOWEST)
+		stmt, err := p.ParseNode(LOWEST)
+		if err != nil {
+			return nil, err
+		}
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
 		}
 		p.nextToken()
 	}
 
-	return block
+	return block, nil
 }
 
 func (p *V1Parser) expectPeek(t TokenType) bool {
@@ -755,4 +850,3 @@ func (p *V1Parser) expectPeek(t TokenType) bool {
 		return false
 	}
 }
-

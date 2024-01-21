@@ -65,7 +65,11 @@ func (i *Interpreter) Execute(args []string) error {
 
 		l := core.NewV1Lexer(line)
 		p := core.NewV1Parser(l, *i.debugFlag)
-		program := p.ParseProgram()
+		program, err := p.ParseProgram()
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
         for _, exp := range program {
 			value, err := e.Evaluate(exp)
 			if err != nil {
