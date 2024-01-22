@@ -134,7 +134,7 @@ func (fc *FunctionCall) GetColumn() int {
 type FunctionLiteral struct {
 	Name       string
 	Parameters []*VariableDeclaration
-	Body       []Node
+	Body       *BlockStatement
 	Line       int
 	Column     int
 }
@@ -271,20 +271,7 @@ func (ie *IfNode) GetColumn() int {
 	return ie.Column
 }
 
-// TODO: Is {If,For}Node best naming? is it a clause? DOES IT MATTER?!
 type ForNode struct {
-	/*
-	 *	valid appearances:
-	 *  	for <Initialisation>; <Condition>; <Updater> {
-	 *			<Body>
-	 *		}
-	 *  	for <Condition> {
-	 *			<Body>
-	 *		}
-	 *  	for  {
-	 *			<Body>
-	 *		}
-	 */
 	Initialisation Node
 	Condition      Node
 	Updater        Node
@@ -377,7 +364,7 @@ func NewPrefixNode(operator string, right Node, line, column int) *PrefixNode {
 	}
 }
 
-func NewFunctionLiteral(name string, parameters []*VariableDeclaration, body []Node, line, column int) *FunctionLiteral {
+func NewFunctionLiteral(name string, parameters []*VariableDeclaration, body *BlockStatement, line, column int) *FunctionLiteral {
 	return &FunctionLiteral{
 		Name:       name,
 		Parameters: parameters,
