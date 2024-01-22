@@ -39,7 +39,7 @@ var precedences = map[TokenType]int{
 }
 
 type Parser interface {
-	ParseProgram() ([]Node, error)
+	ParseProgram() (Node, error)
 	ParseNode(int) (Node, error)
 }
 
@@ -104,7 +104,7 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	return p
 }
 
-func (p *V1Parser) ParseProgram() ([]Node, error) {
+func (p *V1Parser) ParseProgram() (Node, error) {
 	program := []Node{}
 	for !p.curTokenIs(EOF) {
 		exp, err := p.ParseNode(LOWEST)
@@ -116,7 +116,7 @@ func (p *V1Parser) ParseProgram() ([]Node, error) {
 		}
 		p.nextToken()
 	}
-	return program, nil
+	return &BlockStatement{program, 0, 0}, nil
 }
 
 func (p *V1Parser) registerPrefix(tokenType TokenType, fn prefixParseFn) {
@@ -413,30 +413,6 @@ func (p *V1Parser) parseIdentifier() (Node, error) {
 	return ident, nil
 }
 
-// func (p *V1Parser) parseDotNotation(left Node) Node {
-// 	if p.Debug {
-// 		fmt.Println("Entering parseDotNotation")
-// 	}
-
-// 	// Advancing past the DOT token
-// 	p.nextToken()
-
-// 	// Creating a new DotNotationNode with the left part (before the dot)
-// 	// and the right part (the next identifier after the dot)
-// 	dotNotationNode := &DotNotationNode{
-// 		Left:   left,
-// 		Right:  p.parseIdentifier(),
-// 		Line:   left.GetLine(),
-// 		Column: left.GetColumn(),
-// 	}
-
-// 	if p.Debug {
-// 		fmt.Printf("Parsed DotNotation: %v\n", dotNotationNode)
-// 		fmt.Println("Exiting parseDotNotation with DotNotationNode")
-// 	}
-
-// 	return dotNotationNode
-// }
 
 func (p *V1Parser) parseFunctionCall(function Node) (Node, error) {
 	if p.Debug {
@@ -585,11 +561,6 @@ func (p *V1Parser) parseAssignNode(left Node) (Node, error) {
 	return Node, nil
 }
 
-func (p *V1Parser) noPrefixParseFnError(t TokenType) {
-	msg := fmt.Sprintf("no prefix parse function for %s found", TokenTypeStr[t])
-	p.errors = append(p.errors, msg)
-}
-
 func (p *V1Parser) peekTokenIs(t TokenType) bool {
 	return p.peekToken.Type == t
 }
@@ -736,8 +707,17 @@ func (p *V1Parser) parseIfStatement() (Node, error) {
 		return nil, err
 	}
 
+	switch c := condition.(type) {
+
+	case *InfixNode:
+		switch c.Operator {
+		case "+", "-", "/", "*", "%":
+			return nil, fmt.Errorf("operator %s is non-logical on line: %d", c.Operator, c.Line)
+		}
+
+	}
+
 	ifExp.Condition = condition
-	// TODO: check if condition operator is logical
 
 	if !p.expectPeek(LBRACE) {
 		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
@@ -747,7 +727,7 @@ func (p *V1Parser) parseIfStatement() (Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	ifExp.Consequence = block.Statements
+	ifExp.Consequence = block
 
 	if p.peekTokenIs(ELSE) {
 		p.nextToken()
@@ -759,7 +739,7 @@ func (p *V1Parser) parseIfStatement() (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		ifExp.Alternative = block.Statements
+		ifExp.Alternative = block
 	}
 
 	return ifExp, nil

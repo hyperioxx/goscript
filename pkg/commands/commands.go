@@ -114,7 +114,7 @@ func (app *Application) Run() {
 			fileHandler := NewFileHandler(app.debugFlag)
 			err := fileHandler.Execute(app.args)
 			if err != nil {
-				fmt.Printf("File handler failed: %s\n", err.Error())
+				fmt.Printf("%s\n", err.Error())
 				app.exit(1)
 			}
 			app.exit(0)

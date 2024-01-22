@@ -70,20 +70,17 @@ func (i *Interpreter) Execute(args []string) error {
 			fmt.Println(err)
 			return nil
 		}
-		for _, exp := range program {
-			value, err := e.Evaluate(exp)
-			if err != nil {
-				fmt.Println(err)
-			}
-			if _, ok := value.(*core.Nil); !ok {
-				fmt.Println(value.Value())
-			}
+		
+		_, err = e.Evaluate(program)
+		if err != nil {
+			fmt.Println(err)
 		}
+		
 	}
 }
 
 func (i *Interpreter) printSystemInfo() {
-	fmt.Printf("goscript REPL (Version: %s)\n", i.version.String())
+	fmt.Printf("GoScript REPL (Version: %s)\n", i.version.String())
 	fmt.Printf("Operating System: %s\n", runtime.GOOS)
 	fmt.Printf("Architecture: %s\n", runtime.GOARCH)
 	fmt.Println("Enter 'exit' to quit the REPL.")

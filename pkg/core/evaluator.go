@@ -25,6 +25,11 @@ type Evaluator struct {
 func NewEvaluator(debug bool) *Evaluator {
 	evaluator := &Evaluator{debug: debug}
 	frame := Frame{scope: map[string]Object{}}
+
+	// setup builtin functions in root scope
+	frame.scope["print"] = &GoFunction{Name: "print", Func: gsprint}
+	frame.scope["length"] = &GoFunction{Name: "length", Func: gslength}
+	
 	evaluator.callStack = append(evaluator.callStack, frame)
 	return evaluator
 }
@@ -43,12 +48,19 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		}
 		return &Nil{}, fmt.Errorf("variable '%s' is not defined", n.String())
 	case *ArrayLiteral:
-		fmt.Println(n)
 		return &Nil{}, nil
 	case *ForNode:
 		return &Nil{}, nil
 	case *FunctionLiteral:
 		e.callStack[e.framePointer].scope[n.Name] = &Function{}
+		return &Nil{}, nil
+	case *BlockStatement:
+		for _, exp := range n.Statements {
+			_, err := e.Evaluate(exp)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return &Nil{}, nil
 	case *FunctionCall:
 		if fn, ok := e.callStack[e.framePointer].scope[n.Name].(Callable); ok {
@@ -56,7 +68,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 			for _, arg := range n.Arguments {
 				val, err := e.Evaluate(arg)
 				if err != nil {
-					return Nil{}, err
+					return &Nil{}, err
 				}
 				args = append(args, val)
 			}
@@ -66,12 +78,14 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		return &Nil{}, fmt.Errorf("function '%s' is not defined", n.Name)
 	case *IfNode:
 		condition, err := e.Evaluate(n.Condition)
-		fmt.Println(condition, err)
 		if err != nil {
-			return &Nil{}, err
+            return &Nil{}, err
 		}
-		fmt.Println(condition)
-		return &Nil{}, nil
+		if _, ok := condition.Value().(bool); ok {
+			return e.Evaluate(n.Consequence)
+		} else {
+			return e.Evaluate(n.Alternative)
+		}
 	case *InfixNode:
 		switch n.Operator {
 		case "+":

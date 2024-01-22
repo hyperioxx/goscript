@@ -37,9 +37,12 @@ func (f *FileHandler) Execute(args []string) error {
 		fmt.Println(err)
 		return nil
 	}
-	for _, exp := range program {
-		e.Evaluate(exp)
+	
+	_, err = e.Evaluate(program)
+	if err != nil {
+		return err
 	}
+	
 
 	return nil
 }

@@ -249,8 +249,8 @@ func (pe *PrefixNode) GetColumn() int {
 
 type IfNode struct {
 	Condition   Node
-	Consequence []Node
-	Alternative []Node
+	Consequence Node
+	Alternative Node
 	Line        int
 	Column      int
 }
@@ -332,7 +332,7 @@ func (bs *BlockStatement) GetColumn() int {
 	return bs.Column
 }
 
-func NewIfNode(condition Node, consequence []Node, alternative []Node, line, column int) *IfNode {
+func NewIfNode(condition Node, consequence Node, alternative Node, line, column int) *IfNode {
 	return &IfNode{
 		Condition:   condition,
 		Consequence: consequence,
