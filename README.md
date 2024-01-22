@@ -3,6 +3,14 @@
 
 GoScript is a dynamically typed, interpreted language created out of curiosity to answer that question we ask as programmers: "How do you make a programming language from scratch?" So, I've given it a try.
 
+Note: This is still a work in progress 
+
+Broken things:
+- call stack not fully implemented
+- scoping 
+- native goscript function calls
+- native function arguments 
+
 
 Example syntax:
 ```
