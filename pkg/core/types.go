@@ -497,6 +497,7 @@ func (m Map) String() Object {
 type Function struct {
 	Name       string
 	Parameters []string
+	Body       *BlockStatement
 }
 
 func (f *Function) Type() string {
