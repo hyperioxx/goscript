@@ -1,11 +1,11 @@
 myInt = 1
 
-if myInt > 1 {
-    print(myInt + 1)
+func a(){
+   print("foo")
 }
 
-func a(){
-
+if myInt > 1 {
+    print(myInt + 1)
 }
 
 a()
