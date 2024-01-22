@@ -612,31 +612,14 @@ func (p *V1Parser) parseFunctionLiteral() (Node, error) {
 	p.nextToken()
 	p.nextToken()
 
-	for !p.peekTokenIs(RBRACE) && !p.curTokenIs(LBRACE) {
-
-		var expr Node
-		var err error
-		if p.curToken.Type == RETURN {
-			expr, err = p.parseReturnStatement()
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			expr, err = p.ParseNode(LOWEST)
-			if err != nil {
-				return nil, err
-			}
-		}
-		fl.Body = append(fl.Body, expr)
+	block, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
 	}
 
-	if len(fl.Body) > 0 {
-		if _, ok := fl.Body[len(fl.Body)-1].(*ReturnStatement); !ok {
-			fl.Body = append(fl.Body, &ReturnStatement{})
-		}
-	} else {
-		fl.Body = append(fl.Body, &ReturnStatement{})
-	}
+	
+	fl.Body = block
+	
 	return fl, nil
 }
 
