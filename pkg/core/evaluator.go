@@ -52,7 +52,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	case *ForNode:
 		return &Nil{}, nil
 	case *FunctionLiteral:
-		e.callStack[e.framePointer].scope[n.Name] = &Function{}
+		e.callStack[e.framePointer].scope[n.Name] = &Function{Body: n.Body}
 		return &Nil{}, nil
 	case *BlockStatement:
 		for _, exp := range n.Statements {
@@ -63,7 +63,9 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		}
 		return &Nil{}, nil
 	case *FunctionCall:
-		if fn, ok := e.callStack[e.framePointer].scope[n.Name].(Callable); ok {
+
+		switch fn := e.callStack[e.framePointer].scope[n.Name].(type) {
+		case *GoFunction:
 			var args []Object
 			for _, arg := range n.Arguments {
 				val, err := e.Evaluate(arg)
@@ -74,7 +76,10 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 			}
 
 			return fn.Call(args)
+		case *Function:
+			return e.Evaluate(fn.Body)
 		}
+		
 		return &Nil{}, fmt.Errorf("function '%s' is not defined", n.Name)
 	case *IfNode:
 		condition, err := e.Evaluate(n.Condition)
