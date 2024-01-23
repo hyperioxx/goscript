@@ -1,3 +1,3 @@
-module github.com/hyperioxx/goscript
+module goscript
 
 go 1.21.6
