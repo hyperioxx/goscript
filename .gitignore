@@ -22,10 +22,6 @@ testdata/
 # Go build cache
 .cache/
 
-# Go modules
-go.mod
-go.sum
-
 # Ignore the binary file
 /bin/
 
