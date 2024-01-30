@@ -3,6 +3,15 @@
 
 GoScript is a dynamically typed, interpreted language created out of curiosity to answer that question we ask as programmers: "How do you make a programming language from scratch?" So, I've given it a try.
 
+## Requirements:
+- Go 1.21
+
+## Install
+
+```bash
+go install github.com/hyperioxx/goscript/cmd/goscript@latest 
+```
+
 Note: This is still a work in progress 
 
 Broken things:
