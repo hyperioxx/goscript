@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/hyperioxx/goscript/pkg/commands"
+	"goscript/pkg/commands"
 )
 
 func main() {

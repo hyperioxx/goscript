@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/hyperioxx/goscript/pkg/version"
+	"goscript/pkg/version"
 )
 
 const ModulePath string = "./"

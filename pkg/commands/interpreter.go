@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/hyperioxx/goscript/pkg/core"
-	"github.com/hyperioxx/goscript/pkg/version"
+	"goscript/pkg/core"
+	"goscript/pkg/version"
 )
 
 type Interpreter struct {
@@ -70,12 +70,12 @@ func (i *Interpreter) Execute(args []string) error {
 			fmt.Println(err)
 			return nil
 		}
-		
+
 		_, err = e.Evaluate(program)
 		if err != nil {
 			fmt.Println(err)
 		}
-		
+
 	}
 }
 

@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/hyperioxx/goscript/pkg/version"
+	"goscript/pkg/version"
 )
 
 type VersionCommand struct {
