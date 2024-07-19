@@ -50,6 +50,28 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	case *ArrayLiteral:
 		return &Nil{}, nil
 	case *ForNode:
+		if _, err := e.Evaluate(n.Initialisation); err != nil {
+			return &Nil{}, err
+		}
+
+		for {
+			cond, err := e.Evaluate(n.Condition)
+			if err != nil {
+				return &Nil{}, err
+			}
+			if !isTruthy(cond) {
+				break
+			}
+
+			if _, err := e.Evaluate(n.Body); err != nil {
+				return &Nil{}, err
+			}
+
+			if _, err := e.Evaluate(n.Updater); err != nil {
+				return &Nil{}, err
+			}
+		}
+
 		return &Nil{}, nil
 	case *FunctionLiteral:
 		e.callStack[e.framePointer].scope[n.Name] = &Function{Body: n.Body}
@@ -154,10 +176,37 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 				return &Nil{}, err
 			}
 			return left.GreaterThan(right)
+		case "<":
+			left, err := e.Evaluate(n.Left)
+			if err != nil {
+				return &Nil{}, err
+			}
+			right, err := e.Evaluate(n.Right)
+			if err != nil {
+				return &Nil{}, err
+			}
+			return left.LessThan(right)
 		default:
 			return &Nil{}, fmt.Errorf("unknown operator: %s", n.Operator)
 		}
 	default:
 		return nil, fmt.Errorf("Unknown %T", n)
+	}
+}
+
+func isTruthy(obj Object) bool {
+	switch obj := obj.(type) {
+	case *Integer:
+		return obj.IntValue != 0
+	case *Float:
+		return obj.FloatValue != 0.0
+	case *String:
+		return obj.StringValue != ""
+	case *Boolean:
+		return obj.BoolValue
+	case *Nil:
+		return false
+	default:
+		return true
 	}
 }

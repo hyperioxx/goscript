@@ -275,13 +275,12 @@ type ForNode struct {
 	Initialisation Node
 	Condition      Node
 	Updater        Node
-	Body           []Node
+	Body           Node
 	Line           int
 	Column         int
 }
 
 func (fe *ForNode) String() string {
-	// TODO
 	return "for"
 }
 

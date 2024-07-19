@@ -413,7 +413,6 @@ func (p *V1Parser) parseIdentifier() (Node, error) {
 	return ident, nil
 }
 
-
 func (p *V1Parser) parseFunctionCall(function Node) (Node, error) {
 	if p.Debug {
 		fmt.Println("Entering parseFunctionCall")
@@ -617,9 +616,8 @@ func (p *V1Parser) parseFunctionLiteral() (Node, error) {
 		return nil, err
 	}
 
-	
 	fl.Body = block
-	
+
 	return fl, nil
 }
 
@@ -737,25 +735,20 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 	forExp := &ForNode{}
 
 	components := []Node{}
+	p.nextToken()
 
-	for {
+	for !p.curTokenIs(LBRACE) {
 		node, err := p.ParseNode(LOWEST)
 		if err != nil {
 			return nil, err
 		}
 
 		components = append(components, node)
-
-		if p.peekTokenIs(SEMICOLON) {
+        p.nextToken()
+		if p.curTokenIs(SEMICOLON) {
 			p.nextToken()
-			p.nextToken()
-		} else if p.peekTokenIs(LBRACE) || p.curTokenIs(LBRACE) {
-			break
-		} else {
-			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 		}
 	}
-
 	if len(components) == 2 || len(components) > 3 {
 		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
 	}
@@ -772,7 +765,7 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	forExp.Body = block.Statements
+	forExp.Body = block
 
 	if p.Debug {
 		fmt.Println("Exiting parseForStatement")
