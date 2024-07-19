@@ -24,13 +24,14 @@ type Evaluator struct {
 
 func NewEvaluator(debug bool) *Evaluator {
 	evaluator := &Evaluator{debug: debug}
-	frame := Frame{scope: map[string]Object{}}
+	frame := Frame{scope: map[string]Object{}} // global scope
 
 	// setup builtin functions in root scope
 	frame.scope["print"] = &GoFunction{Name: "print", Func: gsprint}
 	frame.scope["length"] = &GoFunction{Name: "length", Func: gslength}
+    evaluator.callStack = make([]Frame, 10000) // call stack of 10000
+	evaluator.callStack[evaluator.framePointer] = frame
 
-	evaluator.callStack = append(evaluator.callStack, frame)
 	return evaluator
 }
 
@@ -50,6 +51,8 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	case *ArrayLiteral:
 		return &Nil{}, nil
 	case *ForNode:
+		e.pushFrame()
+		defer e.popFrame()
 		if _, err := e.Evaluate(n.Initialisation); err != nil {
 			return &Nil{}, err
 		}
@@ -85,7 +88,8 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		}
 		return &Nil{}, nil
 	case *FunctionCall:
-
+        e.pushFrame()
+		defer e.popFrame()
 		switch fn := e.callStack[e.framePointer].scope[n.Name].(type) {
 		case *GoFunction:
 			var args []Object
@@ -192,6 +196,23 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	default:
 		return nil, fmt.Errorf("Unknown %T", n)
 	}
+}
+
+
+func (e *Evaluator) pushFrame(){
+	// create new scope and copy old scope to new scope 
+	frame := Frame{scope: make(map[string]Object, len(e.callStack[e.framePointer].scope))}
+	for k, v := range e.callStack[e.framePointer].scope {
+		frame.scope[k] = v
+	}
+
+	e.framePointer++
+	e.callStack[e.framePointer] = frame
+}
+
+func (e *Evaluator) popFrame(){
+	e.callStack = e.callStack[:len(e.callStack)-1]
+	e.framePointer--
 }
 
 func isTruthy(obj Object) bool {
