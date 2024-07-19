@@ -59,17 +59,17 @@ func (l *V1Lexer) NextToken() Token {
 	switch l.ch {
 	case '+':
 		if l.peekChar() == '+' {
-			tok = newToken(INC, "++")
+			tok = newToken(INC, "++", l.line, l.column)
 			l.readChar()
 		} else if l.peekChar() == '=' {
-			tok = newToken(ADD_ASSIGN, "+=")
+			tok = newToken(ADD_ASSIGN, "+=", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(ADD, "+")
+			tok = newToken(ADD, "+", l.line, l.column)
 		}
 	case '-':
 		if l.peekChar() == '-' {
-			tok = newToken(DEC, "--")
+			tok = newToken(DEC, "--", l.line, l.column)
 			l.readChar()
 		} else if isDigit(l.peekChar()) {
 			tok.Type = INT
@@ -81,17 +81,17 @@ func (l *V1Lexer) NextToken() Token {
 				return tok
 			}
 		} else if l.peekChar() == '=' {
-			tok = newToken(SUB_ASSIGN, "-=")
+			tok = newToken(SUB_ASSIGN, "-=", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(SUB, "-")
+			tok = newToken(SUB, "-", l.line, l.column)
 		}
 	case '*':
 		if l.peekChar() == '*' {
-			tok = newToken(EXP, "**")
+			tok = newToken(EXP, "**", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(MUL, "*")
+			tok = newToken(MUL, "*", l.line, l.column)
 		}
 	case '/':
 		if l.peekChar() == '/' {
@@ -100,79 +100,79 @@ func (l *V1Lexer) NextToken() Token {
 			l.skipComment()
 			return l.NextToken()
 		} else {
-			tok = newToken(DIV, "/")
+			tok = newToken(DIV, "/", l.line, l.column)
 		}
 	case '%':
-		tok = newToken(REM, "%")
+		tok = newToken(REM, "%", l.line, l.column)
 	case '|':
 		if l.peekChar() == '=' {
-			tok = newToken(OR, "or")
+			tok = newToken(OR, "or", l.line, l.column)
 		}
 	case '^':
 		if l.peekChar() == '=' {
-			tok = newToken(XOR, "^")
+			tok = newToken(XOR, "^", l.line, l.column)
 		}
 	case '<':
 		if l.peekChar() == '=' {
-			tok = newToken(LT_EQ, "<=")
+			tok = newToken(LT_EQ, "<=", l.line, l.column)
 			l.readChar()
 		} else if l.peekChar() == '<' {
-			tok = newToken(LEFT_SHIFT, "<<")
+			tok = newToken(LEFT_SHIFT, "<<", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(LT, "<")
+			tok = newToken(LT, "<", l.line, l.column)
 		}
 	case '>':
 		if l.peekChar() == '=' {
-			tok = newToken(GT_EQ, ">=")
+			tok = newToken(GT_EQ, ">=", l.line, l.column)
 			l.readChar()
 		} else if l.peekChar() == '>' {
-			tok = newToken(RIGHT_SHIFT, ">>")
+			tok = newToken(RIGHT_SHIFT, ">>", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(GT, ">")
+			tok = newToken(GT, ">", l.line, l.column)
 		}
 	case '=':
 		if l.peekChar() == '=' {
-			tok = newToken(EQ, "==")
+			tok = newToken(EQ, "==", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(ASSIGN, "=")
+			tok = newToken(ASSIGN, "=", l.line, l.column)
 		}
 	case '!':
 		if l.peekChar() == '=' {
-			tok = newToken(NOT_EQ, "!=")
+			tok = newToken(NOT_EQ, "!=", l.line, l.column)
 			l.readChar()
 		}
 	case ';':
-		tok = newToken(SEMICOLON, ";")
+		tok = newToken(SEMICOLON, ";", l.line, l.column)
 	case '\n':
 		if l.ch == -1 {
-			tok = newToken(EOF, "EOF")
+			tok = newToken(EOF, "EOF", l.line, l.column)
 		} else {
-			tok = newToken(NEWLINE, "\n")
+			tok = newToken(NEWLINE, "\n", l.line, l.column)
 		}
 	case '[':
-		tok = newToken(LBRACKET, "[")
+		tok = newToken(LBRACKET, "[", l.line, l.column)
 	case ']':
-		tok = newToken(RBRACKET, "]")
+		tok = newToken(RBRACKET, "]", l.line, l.column)
 	case '(':
-		tok = newToken(LPAREN, "(")
+		tok = newToken(LPAREN, "(", l.line, l.column)
 	case ')':
-		tok = newToken(RPAREN, ")")
+		tok = newToken(RPAREN, ")", l.line, l.column)
 	case ',':
-		tok = newToken(COMMA, ",")
+		tok = newToken(COMMA, ",", l.line, l.column)
 	case ':':
 		if l.peekChar() == '=' {
-			tok = newToken(ASSIGN_INF, ":=")
+			tok = newToken(ASSIGN_INF, ":=", l.line, l.column)
 			l.readChar()
 		} else {
-			tok = newToken(COLON, ":")
+			tok = newToken(COLON, ":", l.line, l.column)
 		}
 	case '{':
-		tok = newToken(LBRACE, "{")
+		tok = newToken(LBRACE, "{", l.line, l.column)
 	case '}':
-		tok = newToken(RBRACE, "}")
+		tok = newToken(RBRACE, "}", l.line, l.column)
 	case '"':
 		tok.Type = STRING
 		tok.Value = l.readString()
@@ -180,7 +180,7 @@ func (l *V1Lexer) NextToken() Token {
 		l.skipComment()
 		return l.NextToken()
 	case '.':
-		tok = newToken(DOT, ".")
+		tok = newToken(DOT, ".", l.line, l.column)
 	default:
 		if isLetter(l.ch) {
 			tok.Value = l.readIdentifier()
@@ -252,8 +252,8 @@ func (l *V1Lexer) peekChar() rune {
 	}
 }
 
-func newToken(tokenType TokenType, ch string) Token {
-	return Token{Type: tokenType, Value: ch}
+func newToken(tokenType TokenType, ch string, line int, column int) Token {
+	return Token{Type: tokenType, Value: ch, Line: line, Column: column }
 }
 
 func (l *V1Lexer) skipWhitespace() {
