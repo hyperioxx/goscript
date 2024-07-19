@@ -1,0 +1,46 @@
+# File: .golangci.yml
+# golangci-lint configuration file
+
+#== Linters In-use (golangci-lint help linters):
+# errcheck: Detects when error return values are not checked.
+# gofmt: Checks if the code is properly formatted according to the standard Go formatting guidelines.
+# goimports: Checks and fixes imports order and removes unused imports.
+# gosec: Inspects source code for security problems.
+# gosimple: Linter for Go source code that specializes in simplifying code.
+# govet: Examines Go source code and reports suspicious constructs.
+# ineffassign:Detects when assignments to existing variables are not used.
+# misspell:Finds commonly misspelled English words.
+# staticcheck: An extensive linter that covers many areas of Go code quality, performance issues, and much more.
+# unparam: Reports unused function parameters.
+# unused: Checks Go code for unused constants, variables, functions and types.
+#
+
+#== Ignore List:
+# SA9004: only the first constant in this group has an explicit type
+#
+
+linters-settings:
+  gosimple:
+    checks:
+      - "all"
+  staticcheck:
+    checks:
+      - "all"
+      - "-SA9004"
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unparam
+    - unused
+
+# EOF

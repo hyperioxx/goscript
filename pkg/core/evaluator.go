@@ -29,7 +29,7 @@ func NewEvaluator(debug bool) *Evaluator {
 	// setup builtin functions in root scope
 	frame.scope["print"] = &GoFunction{Name: "print", Func: gsprint}
 	frame.scope["length"] = &GoFunction{Name: "length", Func: gslength}
-	
+
 	evaluator.callStack = append(evaluator.callStack, frame)
 	return evaluator
 }
@@ -79,18 +79,22 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		case *Function:
 			return e.Evaluate(fn.Body)
 		}
-		
+
 		return &Nil{}, fmt.Errorf("function '%s' is not defined", n.Name)
 	case *IfNode:
 		condition, err := e.Evaluate(n.Condition)
 		if err != nil {
-            return &Nil{}, err
+			return &Nil{}, err
 		}
-		if _, ok := condition.Value().(bool); ok {
+		boolean, _ := condition.(*Boolean)
+		if boolean.BoolValue {
 			return e.Evaluate(n.Consequence)
-		} else {
+		}
+
+		if n.Alternative != nil {
 			return e.Evaluate(n.Alternative)
 		}
+		return &Nil{}, nil
 	case *InfixNode:
 		switch n.Operator {
 		case "+":
