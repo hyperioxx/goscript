@@ -1,89 +1,753 @@
 package core
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 )
 
 type Node interface {
-	String() string
+	String() *String
+}
+
+type Object interface {
+	Type() string
 	Value() interface{}
+	String() *String
+	Add(other Object) (Object, error)
+	Sub(other Object) (Object, error)
+	Multiply(other Object) (Object, error)
+	Divide(other Object) (Object, error)
+	Modulo(other Object) (Object, error)
+	Equal(other Object) (Object, error)
+	NotEqual(other Object) (Object, error)
+	GreaterThan(other Object) (Object, error)
+	LessThan(other Object) (Object, error)
+	GreaterThanOrEqual(other Object) (Object, error)
+	LessThanOrEqual(other Object) (Object, error)
+}
+
+type Callable interface {
+	Object
+	GetName() string
+	Call(args []Object) (Object, error)
+}
+
+type Error interface {
+	Object
+	Error() string
+}
+
+type Integer struct {
+	value int
+}
+
+func (i *Integer) Type() string {
+	return "integer"
+}
+
+func (i *Integer) Value() interface{} {
+	return i.value
+}
+
+func (i *Integer) String() *String {
+	return &String{value: fmt.Sprintf("%d", i.value)}
+}
+
+func (i *Integer) Add(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Integer{i.value + otherInt.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot perform addition operation with %s and %s", i.Type(), other.Type())
+	}
+}
+
+func (i *Integer) Sub(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Integer{i.value - otherInt.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot perform subtraction operation with %s and %s", i.Type(), other.Type())
+	}
+}
+
+func (i *Integer) Multiply(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Integer{i.value * otherInt.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot perform multiplication operation with %s and %s", i.Type(), other.Type())
+	}
+}
+
+func (i *Integer) Divide(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		if otherInt.value == 0 {
+			return nil, fmt.Errorf("Division by zero")
+		}
+		return &Integer{i.value / otherInt.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot perform division operation with %s and %s", i.Type(), other.Type())
+	}
+}
+
+func (i *Integer) Modulo(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		if otherInt.value == 0 {
+			return nil, fmt.Errorf("Division by zero")
+		}
+		return &Integer{i.value % otherInt.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot perform modulo operation with %s and %s", i.Type(), other.Type())
+	}
+}
+
+func (i *Integer) Equal(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value == otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using equal operator", i.Type(), other.Type())
+}
+
+func (i *Integer) NotEqual(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value != otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using not equal operator", i.Type(), other.Type())
+}
+
+func (i *Integer) GreaterThan(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value > otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using greater than operator", i.Type(), other.Type())
+}
+
+func (i *Integer) LessThan(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value < otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using less than operator", i.Type(), other.Type())
+}
+
+func (i *Integer) GreaterThanOrEqual(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value >= otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using greater than or equal operator", i.Type(), other.Type())
+}
+
+func (i *Integer) LessThanOrEqual(other Object) (Object, error) {
+	if otherInt, ok := other.(*Integer); ok {
+		return &Boolean{value: i.value <= otherInt.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot compare %s with %s using less than or equal operator", i.Type(), other.Type())
+}
+
+func (i *Integer) GetColumn() int {
+	return 0
+}
+func (i *Integer) GetLine() int {
+	return 0
+}
+
+type Float struct {
+	value float64
+}
+
+func (f *Float) Type() string {
+	return "float"
+}
+
+func (f *Float) Value() interface{} {
+	return f.value
+}
+
+func (f *Float) String() *String {
+	return &String{fmt.Sprintf("%f", f.value)}
+}
+
+func (f *Float) Add(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Float{value: f.value + otherFloat.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot add %s with %s", f.Type(), other.Type())
+}
+
+func (f *Float) Sub(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Float{value: f.value - otherFloat.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot subtract %s from %s", other.Type(), f.Type())
+}
+
+func (f *Float) Multiply(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Float{value: f.value * otherFloat.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot multiply %s with %s", f.Type(), other.Type())
+}
+
+func (f *Float) Divide(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		if otherFloat.value == 0 {
+			return nil, fmt.Errorf("Division by zero")
+		}
+		return &Float{value: f.value / otherFloat.value}, nil
+	}
+	return nil, fmt.Errorf("Invalid type: cannot divide %s by %s", f.Type(), other.Type())
+}
+
+func (f *Float) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for %s", f.Type())
+}
+
+func (f *Float) Equal(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value == otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) NotEqual(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value != otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) GreaterThan(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value > otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) LessThan(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value < otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) GreaterThanOrEqual(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value >= otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) LessThanOrEqual(other Object) (Object, error) {
+	if otherFloat, ok := other.(*Float); ok {
+		return &Boolean{value: f.value <= otherFloat.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", f.Type(), other.Type())
+	}
+}
+
+func (f *Float) GetColumn() int {
+	return 0
+}
+func (f *Float) GetLine() int {
+	return 0
+}
+
+type Boolean struct {
+	value bool
+}
+
+func (b *Boolean) Type() string {
+	return "boolean"
+}
+
+func (b *Boolean) Value() interface{} {
+	return b.value
+}
+
+func (b *Boolean) String() *String {
+	return &String{fmt.Sprintf("%t", b.value)}
+}
+
+func (b *Boolean) Add(other Object) (Object, error) {
+	return nil, fmt.Errorf("Addition operation not supported for boolean")
+}
+
+func (b *Boolean) Sub(other Object) (Object, error) {
+	return nil, fmt.Errorf("Subtraction operation not supported for boolean")
+}
+
+func (b *Boolean) Multiply(other Object) (Object, error) {
+	return nil, fmt.Errorf("Multiplication operation not supported for boolean")
+}
+
+func (b *Boolean) Divide(other Object) (Object, error) {
+	return nil, fmt.Errorf("Division operation not supported for boolean")
+}
+
+func (b *Boolean) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for boolean")
+}
+
+func (b *Boolean) Equal(other Object) (Object, error) {
+	if otherBool, ok := other.(*Boolean); ok {
+		return &Boolean{value: b.value == otherBool.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", b.Type(), other.Type())
+	}
+}
+
+func (b *Boolean) NotEqual(other Object) (Object, error) {
+	if otherBool, ok := other.(*Boolean); ok {
+		return &Boolean{value: b.value != otherBool.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", b.Type(), other.Type())
+	}
+}
+
+func (b *Boolean) GreaterThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for boolean")
+}
+
+func (b *Boolean) LessThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for boolean")
+}
+
+func (b *Boolean) GreaterThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for boolean")
+}
+
+func (b *Boolean) LessThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for boolean")
+}
+
+func (b *Boolean) GetColumn() int {
+	return 0
+}
+func (b *Boolean) GetLine() int {
+	return 0
+}
+
+type String struct {
+	value string
+}
+
+func (s *String) Type() string {
+	return "string"
+}
+
+func (s *String) Value() interface{} {
+	return s.value
+}
+
+func (s *String) String() *String {
+	return s
+}
+
+func (s *String) Add(other Object) (Object, error) {
+	if otherString, ok := other.(*String); ok {
+		return &String{value: s.value + otherString.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot concatenate %s with %s", s.Type(), other.Type())
+	}
+}
+
+func (s *String) Sub(other Object) (Object, error) {
+	return nil, fmt.Errorf("Subtraction operation not supported for string")
+}
+
+func (s *String) Multiply(other Object) (Object, error) {
+	return nil, fmt.Errorf("Multiplication operation not supported for string")
+}
+
+func (s *String) Divide(other Object) (Object, error) {
+	return nil, fmt.Errorf("Division operation not supported for string")
+}
+
+func (s *String) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for string")
+}
+
+func (s *String) Equal(other Object) (Object, error) {
+	if otherString, ok := other.(*String); ok {
+		return &Boolean{value: s.value == otherString.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", s.Type(), other.Type())
+	}
+}
+
+func (s *String) NotEqual(other Object) (Object, error) {
+	if otherString, ok := other.(*String); ok {
+		return &Boolean{value: s.value != otherString.value}, nil
+	} else {
+		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", s.Type(), other.Type())
+	}
+}
+
+func (s *String) GreaterThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for string")
+}
+
+func (s *String) LessThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for string")
+}
+
+func (s *String) GreaterThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for string")
+}
+
+func (s *String) LessThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for string")
+}
+
+func (s *String) GetColumn() int {
+	return 0
+}
+func (s *String) GetLine() int {
+	return 0
+}
+
+// type Array struct {
+// 	Elements []Node
+// }
+
+// func (a *Array) Type() string {
+// 	return "array"
+// }
+
+// func (a *Array) Value() interface{} {
+// 	values := make([]interface{}, len(a.Elements))
+// 	for i, element := range a.Elements {
+// 		values[i] = element.String().value
+// 	}
+// 	return values
+// }
+
+// func (a *Array) String() *String {
+// 	strValues := make([]string, len(a.Elements))
+// 	for i, element := range a.Elements {
+// 		x := element.String()
+
+// 		strValues[i] = x.value
+
+// 	}
+// 	return &String{value: fmt.Sprintf("[%s]", strings.Join(strValues, ", "))}
+// }
+
+// func (a *Array) Add(other Object) (Object, error) {
+// 	if otherArray, ok := other.(*Array); ok {
+// 		newElements := make([]Node, len(a.Elements)+len(otherArray.Elements))
+// 		copy(newElements, a.Elements)
+// 		copy(newElements[len(a.Elements):], otherArray.Elements)
+// 		return &Array{Elements: newElements}, nil
+// 	} else {
+// 		return nil, fmt.Errorf("Invalid type: cannot concatenate %s with %s", a.Type(), other.Type())
+// 	}
+// }
+
+// func (a *Array) Sub(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Subtraction operation not supported for array")
+// }
+
+// func (a *Array) Multiply(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Multiplication operation not supported for array")
+// }
+
+// func (a *Array) Divide(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Division operation not supported for array")
+// }
+
+// func (a *Array) Modulo(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Modulo operation not supported for array")
+// }
+
+// func (a *Array) Equal(other Object) (Object, error) {
+// 	if otherArray, ok := other.(*Array); ok {
+// 		if len(a.Elements) != len(otherArray.Elements) {
+// 			return &Boolean{value: false}, nil
+// 		}
+// 		for i := range a.Elements {
+// 			equal, err := a.Elements[i].(Object).Equal(otherArray.Elements[i])
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			if boolean, ok := equal.(*Boolean); ok && !boolean.value {
+// 				return &Boolean{value: false}, nil
+// 			}
+// 		}
+// 		return &Boolean{value: true}, nil
+// 	} else {
+// 		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", a.Type(), other.Type())
+// 	}
+// }
+
+// func (a *Array) NotEqual(other Object) (Object, error) {
+// 	equal, err := a.Equal(other)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if boolean, ok := equal.(*Boolean); ok {
+// 		return &Boolean{value: !boolean.value}, nil
+// 	} else {
+// 		return nil, fmt.Errorf("Invalid type: cannot compare %s with %s", a.Type(), other.Type())
+// 	}
+// }
+
+// func (a *Array) GreaterThan(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Comparison operation not supported for array")
+// }
+
+// func (a *Array) LessThan(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Comparison operation not supported for array")
+// }
+
+// func (a *Array) GreaterThanOrEqual(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Comparison operation not supported for array")
+// }
+
+// func (a *Array) LessThanOrEqual(other Object) (Object, error) {
+// 	return nil, fmt.Errorf("Comparison operation not supported for array")
+// }
+
+// func (a *Array) GetColumn() int {
+// 	return 0
+// }
+// func (a *Array) GetLine() int {
+// 	return 0
+// }
+
+type Function struct {
+	Name      string
+	Arguments []*IdentifierLiteral
+	Body      *BlockStatement
+}
+
+func (f *Function) Type() string {
+	return "function"
+}
+
+func (f *Function) Value() interface{} {
+	return ""
+}
+
+func (f *Function) GetName() string {
+	return f.Name
+}
+
+func (f *Function) String() *String {
+	return &String{value: fmt.Sprintf("<%s >", f.Name)}
+}
+
+func (f *Function) Add(other Object) (Object, error) {
+	return nil, fmt.Errorf("Addition operation not supported for function")
+}
+
+func (f *Function) Sub(other Object) (Object, error) {
+	return nil, fmt.Errorf("Subtraction operation not supported for function")
+}
+
+func (f *Function) Multiply(other Object) (Object, error) {
+	return nil, fmt.Errorf("Multiplication operation not supported for function")
+}
+
+func (f *Function) Divide(other Object) (Object, error) {
+	return nil, fmt.Errorf("Division operation not supported for function")
+}
+
+func (f *Function) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for function")
+}
+
+func (f *Function) Equal(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) NotEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) GreaterThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) LessThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) GreaterThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) LessThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *Function) Call(args []Object) (Object, error) {
+	return nil, fmt.Errorf("currently not supported")
+}
+
+func (f *Function) GetColumn() int {
+	return 0
+}
+func (f *Function) GetLine() int {
+	return 0
+}
+
+var _ Object = (*Nil)(nil)
+
+type Nil struct {
+}
+
+func (n *Nil) Type() string {
+	return "nil"
+}
+
+func (n *Nil) Inspect() string {
+	return "nil"
+}
+
+func (n *Nil) Value() interface{} {
+	return nil
+}
+
+func (n *Nil) String() *String {
+	return &String{value: "nil"}
+}
+
+func (n *Nil) Add(other Object) (Object, error) {
+	return nil, fmt.Errorf("Addition operation not supported for nil")
+}
+
+func (n *Nil) Sub(other Object) (Object, error) {
+	return nil, fmt.Errorf("Subtraction operation not supported for nil")
+}
+
+func (n *Nil) Multiply(other Object) (Object, error) {
+	return nil, fmt.Errorf("Multiplication operation not supported for nil")
+}
+
+func (n *Nil) Divide(other Object) (Object, error) {
+	return nil, fmt.Errorf("Division operation not supported for nil")
+}
+
+func (n *Nil) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for nil")
+}
+
+func (n *Nil) Equal(other Object) (Object, error) {
+	return &Boolean{value: n == other}, nil
+}
+
+func (n *Nil) NotEqual(other Object) (Object, error) {
+	return &Boolean{value: n != other}, nil
+}
+
+func (n *Nil) GreaterThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for nil")
+}
+
+func (n *Nil) LessThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for nil")
+}
+
+func (n *Nil) GreaterThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for nil")
+}
+
+func (n *Nil) LessThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for nil")
+}
+
+func (n *Nil) GetColumn() int {
+	return 0
+}
+func (n *Nil) GetLine() int {
+	return 0
+}
+
+type GoFunction struct {
+	Name string
+	Func func([]Object) (Object, error) // The actual Go function
+}
+
+func (f *GoFunction) Type() string {
+	return "gofunction"
+}
+
+func (f *GoFunction) Value() interface{} {
+	return 1
+}
+
+func (f *GoFunction) GetName() string {
+	return f.Name
+}
+
+func (f *GoFunction) String() *String {
+	return &String{value: fmt.Sprintf("<%s >", f.Name)}
+}
+
+func (f *GoFunction) Add(other Object) (Object, error) {
+	return nil, fmt.Errorf("Addition operation not supported for function")
+}
+
+func (f *GoFunction) Sub(other Object) (Object, error) {
+	return nil, fmt.Errorf("Subtraction operation not supported for function")
+}
+
+func (f *GoFunction) Multiply(other Object) (Object, error) {
+	return nil, fmt.Errorf("Multiplication operation not supported for function")
+}
+
+func (f *GoFunction) Divide(other Object) (Object, error) {
+	return nil, fmt.Errorf("Division operation not supported for function")
+}
+
+func (f *GoFunction) Modulo(other Object) (Object, error) {
+	return nil, fmt.Errorf("Modulo operation not supported for function")
+}
+
+func (f *GoFunction) Equal(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) NotEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) GreaterThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) LessThan(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) GreaterThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) LessThanOrEqual(other Object) (Object, error) {
+	return nil, fmt.Errorf("Comparison operation not supported for function")
+}
+
+func (f *GoFunction) Call(args []Object) (Object, error) {
+	// Call the actual Go function here
+	return f.Func(args)
+}
+
+func (f *GoFunction) GetColumn() int {
+	return 0
+}
+func (f *GoFunction) GetLine() int {
+	return 0
+}
+
+// expressions below //
+
+type Expression interface {
 	GetLine() int
 	GetColumn() int
 }
-
-type StringLiteral struct {
-	Line   int
-	Column int
-	value  string
-}
-
-func (sl *StringLiteral) String() string     { return sl.value }
-func (sl *StringLiteral) Value() interface{} { return sl.value }
-func (sl *StringLiteral) GetLine() int       { return sl.Line }
-func (sl *StringLiteral) GetColumn() int     { return sl.Column }
-
-type FloatLiteral struct {
-	Line   int
-	Column int
-	value  float64
-}
-
-func (fl *FloatLiteral) String() string     { return fmt.Sprintf("%f", fl.Value()) }
-func (fl *FloatLiteral) Value() interface{} { return fl.value }
-func (fl *FloatLiteral) GetLine() int       { return fl.Line }
-func (fl *FloatLiteral) GetColumn() int     { return fl.Column }
-
-type ArrayLiteral struct {
-	Line     int
-	Column   int
-	Elements []Node
-}
-
-func (al *ArrayLiteral) String() string {
-	var out bytes.Buffer
-
-	elements := []string{}
-	for _, el := range al.Elements {
-		elements = append(elements, el.String())
-	}
-
-	out.WriteString("[")
-	out.WriteString(strings.Join(elements, ", "))
-	out.WriteString("]")
-
-	return out.String()
-}
-
-func (al *ArrayLiteral) Value() interface{} { return al.Elements }
-func (al *ArrayLiteral) GetLine() int       { return al.Line }
-func (al *ArrayLiteral) GetColumn() int     { return al.Column }
-
-type HashLiteral struct {
-	Line   int
-	Column int
-	Pairs  map[Node]Node
-}
-
-func (hl *HashLiteral) String() string {
-	var out bytes.Buffer
-
-	pairs := []string{}
-	for key, value := range hl.Pairs {
-		pairs = append(pairs, key.String()+": "+value.String())
-	}
-
-	out.WriteString("{")
-	out.WriteString(strings.Join(pairs, ", "))
-	out.WriteString("}")
-
-	return out.String()
-}
-
-func (hl *HashLiteral) Value() interface{} { return hl.Pairs }
-func (hl *HashLiteral) GetLine() int       { return hl.Line }
-func (hl *HashLiteral) GetColumn() int     { return hl.Column }
 
 type ReturnStatement struct {
 	ReturnValue Node
@@ -91,8 +755,8 @@ type ReturnStatement struct {
 	Column      int
 }
 
-func (rs *ReturnStatement) String() string {
-	return fmt.Sprintf("return %s", rs.ReturnValue.String())
+func (rs *ReturnStatement) String() *String {
+	return &String{fmt.Sprintf("return %s", rs.ReturnValue.String())}
 }
 
 func (rs *ReturnStatement) Value() interface{} {
@@ -115,8 +779,8 @@ type FunctionCall struct {
 	Column    int
 }
 
-func (fc *FunctionCall) String() string {
-	return fc.Name
+func (fc *FunctionCall) String() *String {
+	return &String{fc.Name}
 }
 
 func (fc *FunctionCall) Value() interface{} {
@@ -132,15 +796,15 @@ func (fc *FunctionCall) GetColumn() int {
 }
 
 type FunctionLiteral struct {
-	Name       string
-	Parameters []Node
-	Body       *BlockStatement
-	Line       int
-	Column     int
+	Name      string
+	Arguments []*IdentifierLiteral
+	Body      *BlockStatement
+	Line      int
+	Column    int
 }
 
-func (fl *FunctionLiteral) String() string {
-	return fl.Name
+func (fl *FunctionLiteral) String() *String {
+	return &String{fl.Name}
 }
 
 func (fl *FunctionLiteral) Value() interface{} {
@@ -155,28 +819,6 @@ func (fl *FunctionLiteral) GetColumn() int {
 	return fl.Column
 }
 
-type IntegerLiteral struct {
-	value  int
-	Line   int
-	Column int
-}
-
-func (il *IntegerLiteral) String() string {
-	return fmt.Sprint(il.value)
-}
-
-func (il *IntegerLiteral) Value() interface{} {
-	return il.value
-}
-
-func (il *IntegerLiteral) GetLine() int {
-	return il.Line
-}
-
-func (il *IntegerLiteral) GetColumn() int {
-	return il.Column
-}
-
 type IdentifierLiteral struct {
 	value  string
 	Type   int
@@ -184,8 +826,8 @@ type IdentifierLiteral struct {
 	Column int
 }
 
-func (il *IdentifierLiteral) String() string {
-	return il.value
+func (il *IdentifierLiteral) String() *String {
+	return &String{il.value}
 }
 
 func (il *IdentifierLiteral) Value() interface{} {
@@ -208,8 +850,8 @@ type InfixNode struct {
 	Column   int
 }
 
-func (ie *InfixNode) String() string {
-	return fmt.Sprintf("%s %s %s", ie.Left.String(), ie.Operator, ie.Right.String())
+func (ie *InfixNode) String() *String {
+	return &String{fmt.Sprintf("%s %s %s", ie.Left.String(), ie.Operator, ie.Right.String())}
 }
 
 func (ie *InfixNode) Value() interface{} {
@@ -231,8 +873,8 @@ type PrefixNode struct {
 	Column   int
 }
 
-func (pe *PrefixNode) String() string {
-	return string(pe.Operator)
+func (pe *PrefixNode) String() *String {
+	return &String{string(pe.Operator)}
 }
 
 func (pe *PrefixNode) Value() interface{} {
@@ -255,8 +897,8 @@ type IfNode struct {
 	Column      int
 }
 
-func (ie *IfNode) String() string {
-	return "if"
+func (ie *IfNode) String() *String {
+	return &String{"if"}
 }
 
 func (ie *IfNode) Value() interface{} {
@@ -280,8 +922,8 @@ type ForNode struct {
 	Column         int
 }
 
-func (fe *ForNode) String() string {
-	return "for"
+func (fe *ForNode) String() *String {
+	return &String{"for"}
 }
 
 func (fe *ForNode) Value() interface{} {
@@ -302,8 +944,8 @@ type BlockStatement struct {
 	Column     int
 }
 
-func (bs *BlockStatement) String() string {
-	return "if"
+func (bs *BlockStatement) String() *String {
+	return &String{"if"}
 }
 
 func (bs *BlockStatement) Value() interface{} {
@@ -325,14 +967,6 @@ func NewIfNode(condition Node, consequence Node, alternative Node, line, column 
 		Alternative: alternative,
 		Line:        line,
 		Column:      column,
-	}
-}
-
-func NewIntegerLiteral(value int, line, column int) *IntegerLiteral {
-	return &IntegerLiteral{
-		value:  value,
-		Line:   line,
-		Column: column,
 	}
 }
 
@@ -363,13 +997,13 @@ func NewPrefixNode(operator string, right Node, line, column int) *PrefixNode {
 	}
 }
 
-func NewFunctionLiteral(name string, parameters []Node, body *BlockStatement, line, column int) *FunctionLiteral {
+func NewFunctionLiteral(name string, parameters []*IdentifierLiteral, body *BlockStatement, line, column int) *FunctionLiteral {
 	return &FunctionLiteral{
-		Name:       name,
-		Parameters: parameters,
-		Body:       body,
-		Line:       line,
-		Column:     column,
+		Name:      name,
+		Arguments: parameters,
+		Body:      body,
+		Line:      line,
+		Column:    column,
 	}
 }
 
@@ -390,199 +1024,6 @@ func NewReturnStatement(returnValue Node, line, column int) *ReturnStatement {
 	}
 }
 
-func NewFloatLiteral(value float64, line, column int) *FloatLiteral {
-	return &FloatLiteral{
-		value:  value,
-		Line:   line,
-		Column: column,
-	}
-}
-
-func NewStringLiteral(value string, line, column int) *StringLiteral {
-	return &StringLiteral{
-		value:  value,
-		Line:   line,
-		Column: column,
-	}
-}
-
-func NewBooleanLiteral(value bool, line, column int) *BooleanLiteral {
-	return &BooleanLiteral{
-		value:  value,
-		Line:   line,
-		Column: column,
-	}
-}
-
-type BooleanLiteral struct {
-	value  bool
-	Line   int
-	Column int
-}
-
-func (bl *BooleanLiteral) String() string {
-	return fmt.Sprintf("%t", bl.Value())
-}
-
-func (bl *BooleanLiteral) Value() interface{} {
-	return bl.value
-}
-
-func (bl *BooleanLiteral) GetLine() int {
-	return bl.Line
-}
-
-func (bl *BooleanLiteral) GetColumn() int {
-	return bl.Column
-}
-
-type ModuleLiteral struct {
-	Name   string
-	Nodes  []Node
-	Line   int
-	Column int
-}
-
-func (m *ModuleLiteral) String() string {
-	return m.Name
-}
-
-func (m *ModuleLiteral) Value() interface{} {
-	return m.Nodes
-}
-
-func (m *ModuleLiteral) GetLine() int {
-	return m.Line
-}
-
-func (m *ModuleLiteral) GetColumn() int {
-	return m.Column
-}
-
-func NewModuleLiteral(name string, Nodes []Node, line, column int) *ModuleLiteral {
-	return &ModuleLiteral{
-		Name:   name,
-		Nodes:  Nodes,
-		Line:   line,
-		Column: column,
-	}
-}
-
-type ModuleListNode struct {
-	Modules []Node
-	Line    int
-	Column  int
-}
-
-func (mle *ModuleListNode) String() string {
-	var out bytes.Buffer
-
-	modules := []string{}
-	for _, module := range mle.Modules {
-		modules = append(modules, module.String())
-	}
-
-	out.WriteString("(")
-	out.WriteString(strings.Join(modules, ", "))
-	out.WriteString(")")
-
-	return out.String()
-}
-
-func (mle *ModuleListNode) Value() interface{} {
-	return mle.Modules
-}
-
-func (mle *ModuleListNode) GetLine() int {
-	return mle.Line
-}
-
-func (mle *ModuleListNode) GetColumn() int {
-	return mle.Column
-}
-
-func NewModuleListNode(modules []Node, line, column int) *ModuleListNode {
-	return &ModuleListNode{
-		Modules: modules,
-		Line:    line,
-		Column:  column,
-	}
-}
-
-type DotNotationNode struct {
-	Line   int
-	Column int
-	Left   Node
-	Right  Node
-}
-
-func (dn *DotNotationNode) String() string     { return dn.Left.String() + "." + dn.Right.String() }
-func (dn *DotNotationNode) Value() interface{} { return dn } // DotNotationNode itself can be the value.
-func (dn *DotNotationNode) GetLine() int       { return dn.Line }
-func (dn *DotNotationNode) GetColumn() int     { return dn.Column }
-
-type IncrementNode struct {
-	Line    int
-	Column  int
-	Operand *IdentifierLiteral
-}
-
-func (in *IncrementNode) String() string {
-	return fmt.Sprintf("%s++", in.Operand.String())
-}
-
-func (i *IncrementNode) Value() interface{} { return i }
-func (i *IncrementNode) GetLine() int       { return i.Line }
-func (i *IncrementNode) GetColumn() int     { return i.Column }
-
-type DecrementNode struct {
-	Line    int
-	Column  int
-	Operand *IdentifierLiteral
-}
-
-func (dn *DecrementNode) String() string {
-	return fmt.Sprintf("%s--", dn.Operand.String())
-}
-
-func (d *DecrementNode) Value() interface{} { return d }
-func (d *DecrementNode) GetLine() int       { return d.Line }
-func (d *DecrementNode) GetColumn() int     { return d.Column }
-
-type StructLiteral struct {
-	Fields map[string]Node
-	Line   int
-	Column int
-}
-
-func NewStructLiteral(fields map[string]Node, line, column int) *StructLiteral {
-	return &StructLiteral{
-		Fields: fields,
-		Line:   line,
-		Column: column,
-	}
-}
-
-func (sl *StructLiteral) String() string {
-	fieldStrings := make([]string, 0, len(sl.Fields))
-	for name, value := range sl.Fields {
-		fieldStrings = append(fieldStrings, fmt.Sprintf("%s: %s", name, value.String()))
-	}
-	return fmt.Sprintf("{%s}", strings.Join(fieldStrings, ", "))
-}
-
-func (sl *StructLiteral) Value() interface{} {
-	return sl.Fields
-}
-
-func (sl *StructLiteral) GetLine() int {
-	return sl.Line
-}
-
-func (sl *StructLiteral) GetColumn() int {
-	return sl.Column
-}
-
 type VariableDeclaration struct {
 	Identifier *IdentifierLiteral
 	Type       Token
@@ -590,8 +1031,8 @@ type VariableDeclaration struct {
 	Column     int
 }
 
-func (vd *VariableDeclaration) String() string {
-	return fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)
+func (vd *VariableDeclaration) String() *String {
+	return &String{fmt.Sprintf("%s: %s", vd.Identifier.String(), vd.Type.Value)}
 }
 
 func (vd *VariableDeclaration) Value() interface{} { return vd }

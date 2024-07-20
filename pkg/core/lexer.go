@@ -11,15 +11,14 @@ type Lexer interface {
 }
 
 type V1Lexer struct {
-	input         string
-	position      int
-	readPosition  int
-	line          int
-	column        int
-	ch            rune
-	currentIndent int
-	indentStack   []int
-	Debug         bool
+	input        string
+	position     int
+	readPosition int
+	line         int
+	column       int
+	ch           rune
+	indentStack  []int
+	Debug        bool
 }
 
 func NewV1Lexer(input string) Lexer {
@@ -253,7 +252,7 @@ func (l *V1Lexer) peekChar() rune {
 }
 
 func newToken(tokenType TokenType, ch string, line int, column int) Token {
-	return Token{Type: tokenType, Value: ch, Line: line, Column: column }
+	return Token{Type: tokenType, Value: ch, Line: line, Column: column}
 }
 
 func (l *V1Lexer) skipWhitespace() {
