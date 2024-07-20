@@ -77,7 +77,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 
 		return &Nil{}, nil
 	case *FunctionLiteral:
-		e.callStack[e.framePointer].scope[n.Name] = &Function{Body: n.Body}
+		e.callStack[e.framePointer].scope[n.Name] = &Function{Body: n.Body, Parameters: n.Parameters}
 		return &Nil{}, nil
 	case *BlockStatement:
 		for _, exp := range n.Statements {
@@ -103,6 +103,9 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 
 			return fn.Call(args)
 		case *Function:
+			if len(n.Arguments) != len(fn.Parameters){
+				return &Nil{}, fmt.Errorf("function '%s' takes %d arguments",fn.Name, len(fn.Parameters))
+			}
 			return e.Evaluate(fn.Body)
 		}
 

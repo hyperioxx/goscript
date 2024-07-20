@@ -6,8 +6,8 @@ for i = 0 ; i < 10; i = i + 1 {
 
 myInt = 10
 
-func a(){
-   print("foo")
+func a(y){
+   print(y)
 }
 
 if myInt > 1 {
@@ -16,5 +16,4 @@ if myInt > 1 {
 
 x = a
 
-x()
-print(i)
+x(1)

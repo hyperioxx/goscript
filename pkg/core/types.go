@@ -496,7 +496,7 @@ func (m Map) String() Object {
 
 type Function struct {
 	Name       string
-	Parameters []string
+	Parameters []Node
 	Body       *BlockStatement
 }
 
@@ -505,9 +505,7 @@ func (f *Function) Type() string {
 }
 
 func (f *Function) Value() interface{} {
-	return struct {
-		parameters []string
-	}{f.Parameters}
+	return ""
 }
 
 func (f *Function) GetName() string {
