@@ -3,14 +3,11 @@ package core
 import "fmt"
 
 func gsprint(args []Object) (Object, error) {
-	interfaceArgs := make([]interface{}, len(args))
-	for i, v := range args {
+	for _, v := range args {
 		str := v.String()
-		interfaceArgs[i] = str.String().value
+		fmt.Print(str.String().value)
 	}
-
-	fmt.Println(interfaceArgs...)
-
+	fmt.Print("\n")
 	return &Nil{}, nil
 }
 
