@@ -9,13 +9,6 @@ const (
 	FUNC_TYPE
 )
 
-var typeMapping = map[string]int{
-	"int":    INT_TYPE,
-	"float":  FLOAT_TYPE,
-	"string": STRING_TYPE,
-	"func":   FUNC_TYPE,
-}
-
 type Evaluator struct {
 	debug        bool
 	callStack    []Frame
@@ -24,32 +17,30 @@ type Evaluator struct {
 
 func NewEvaluator(debug bool) *Evaluator {
 	evaluator := &Evaluator{debug: debug}
-	frame := Frame{scope: map[string]Object{}}
+	frame := Frame{scope: map[string]Object{}} // global scope
 
 	// setup builtin functions in root scope
 	frame.scope["print"] = &GoFunction{Name: "print", Func: gsprint}
 	frame.scope["length"] = &GoFunction{Name: "length", Func: gslength}
+	evaluator.callStack = make([]Frame, 10000) // call stack of 10000
+	evaluator.callStack[evaluator.framePointer] = frame
 
-	evaluator.callStack = append(evaluator.callStack, frame)
 	return evaluator
 }
 
 func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	switch n := exp.(type) {
-	case *StringLiteral:
-		return &String{StringValue: n.Value().(string)}, nil
-	case *IntegerLiteral:
-		return &Integer{IntValue: n.Value().(int)}, nil
-	case *FloatLiteral:
-		return &Float{FloatValue: n.Value().(float64)}, nil
+	case Object:
+		return n, nil
 	case *IdentifierLiteral:
-		if variable, ok := e.callStack[e.framePointer].scope[n.String()]; ok {
-			return variable, nil
+		variable, err := e.getIdentifier(n.String().value)
+		if err != nil {
+			return &Nil{}, fmt.Errorf("variable '%s' is not defined", n.String())
 		}
-		return &Nil{}, fmt.Errorf("variable '%s' is not defined", n.String())
-	case *ArrayLiteral:
-		return &Nil{}, nil
+		return variable, nil
 	case *ForNode:
+		e.pushFrame()
+		defer e.popFrame()
 		if _, err := e.Evaluate(n.Initialisation); err != nil {
 			return &Nil{}, err
 		}
@@ -74,7 +65,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 
 		return &Nil{}, nil
 	case *FunctionLiteral:
-		e.callStack[e.framePointer].scope[n.Name] = &Function{Body: n.Body}
+		e.callStack[e.framePointer].scope[n.Name] = &Function{Name: n.Name, Body: n.Body, Arguments: n.Arguments}
 		return &Nil{}, nil
 	case *BlockStatement:
 		for _, exp := range n.Statements {
@@ -85,8 +76,13 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		}
 		return &Nil{}, nil
 	case *FunctionCall:
-
-		switch fn := e.callStack[e.framePointer].scope[n.Name].(type) {
+		fn, err := e.getIdentifier(n.Name)
+		if err != nil {
+			return &Nil{}, fmt.Errorf("function '%s' is not defined", n.Name)
+		}
+		e.pushFrame()
+		defer e.popFrame()
+		switch fn := fn.(type) {
 		case *GoFunction:
 			var args []Object
 			for _, arg := range n.Arguments {
@@ -99,6 +95,16 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 
 			return fn.Call(args)
 		case *Function:
+			if len(n.Arguments) != len(fn.Arguments) {
+				return &Nil{}, fmt.Errorf("function '%s' takes %d arguments only %d was given", fn.Name, len(fn.Arguments), len(n.Arguments))
+			}
+			for i, argIdent := range fn.Arguments {
+				arg, err := e.Evaluate(n.Arguments[i])
+				if err != nil {
+					return &Nil{}, err
+				}
+				e.callStack[e.framePointer].scope[argIdent.value] = arg
+			}
 			return e.Evaluate(fn.Body)
 		}
 
@@ -109,7 +115,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 			return &Nil{}, err
 		}
 		boolean, _ := condition.(*Boolean)
-		if boolean.BoolValue {
+		if boolean.value {
 			return e.Evaluate(n.Consequence)
 		}
 
@@ -164,7 +170,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 			if err != nil {
 				return &Nil{}, err
 			}
-			e.callStack[e.framePointer].scope[n.Left.String()] = right
+			e.callStack[e.framePointer].scope[n.Left.String().value] = right
 			return &Nil{}, nil
 		case ">":
 			left, err := e.Evaluate(n.Left)
@@ -194,16 +200,38 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	}
 }
 
-func isTruthy(obj Object) bool {
+func (e *Evaluator) pushFrame() {
+	// create new scope and copy old scope to new scope
+	frame := Frame{scope: make(map[string]Object)}
+
+	e.framePointer++
+	e.callStack[e.framePointer] = frame
+}
+
+func (e *Evaluator) popFrame() {
+	e.callStack = e.callStack[:len(e.callStack)-1]
+	e.framePointer--
+}
+
+func (e *Evaluator) getIdentifier(name string) (Object, error) {
+	for i := e.framePointer; i >= 0; i-- {
+		if variable, ok := e.callStack[i].scope[name]; ok {
+			return variable, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find reference")
+}
+
+func isTruthy(obj Node) bool {
 	switch obj := obj.(type) {
 	case *Integer:
-		return obj.IntValue != 0
+		return obj.value != 0
 	case *Float:
-		return obj.FloatValue != 0.0
+		return obj.value != 0.0
 	case *String:
-		return obj.StringValue != ""
+		return obj.value != ""
 	case *Boolean:
-		return obj.BoolValue
+		return obj.value
 	case *Nil:
 		return false
 	default:

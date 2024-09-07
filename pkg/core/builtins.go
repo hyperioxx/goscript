@@ -3,22 +3,15 @@ package core
 import "fmt"
 
 func gsprint(args []Object) (Object, error) {
-	interfaceArgs := make([]interface{}, len(args))
-	for i, v := range args {
-		str, err := v.String()
-		if err != nil {
-			fmt.Printf("Error converting argument %d to string: %v\n", i, err)
-			continue
-		}
-		interfaceArgs[i] = str.StringValue
+	for _, v := range args {
+		str := v.String()
+		fmt.Print(str.String().value)
 	}
-
-	fmt.Println(interfaceArgs...)
-
-	return Nil{}, nil
+	fmt.Print("\n")
+	return &Nil{}, nil
 }
 
 func gslength(args []Object) (Object, error) {
 	// TODO: build out builtin len function
-	return Nil{}, nil
+	return &Nil{}, nil
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -41,7 +40,6 @@ func TestLexer(t *testing.T) {
 			lexer := NewV1Lexer(test.input)
 			for i, expectedToken := range test.expected {
 				token := lexer.NextToken()
-				fmt.Printf("%+v\n",token )
 				if !reflect.DeepEqual(token, expectedToken) {
 					t.Errorf("test %s failed: token %d - expected %v, got %v", test.name, i, expectedToken, token)
 				}
