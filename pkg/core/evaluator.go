@@ -33,10 +33,11 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 	case Object:
 		return n, nil
 	case *IdentifierLiteral:
-		if variable, ok := e.callStack[e.framePointer].scope[n.String().value]; ok {
-			return variable, nil
+		variable, err := e.getIdentifier(n.String().value)
+		if err != nil {
+			return &Nil{}, fmt.Errorf("variable '%s' is not defined", n.String())
 		}
-		return &Nil{}, fmt.Errorf("variable '%s' is not defined", n.String())
+		return variable, nil
 	case *ForNode:
 		e.pushFrame()
 		defer e.popFrame()
@@ -75,9 +76,13 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		}
 		return &Nil{}, nil
 	case *FunctionCall:
+		fn, err := e.getIdentifier(n.Name)
+		if err != nil {
+			return &Nil{}, fmt.Errorf("function '%s' is not defined", n.Name)
+		}
 		e.pushFrame()
 		defer e.popFrame()
-		switch fn := e.callStack[e.framePointer].scope[n.Name].(type) {
+		switch fn := fn.(type) {
 		case *GoFunction:
 			var args []Object
 			for _, arg := range n.Arguments {
@@ -197,10 +202,7 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 
 func (e *Evaluator) pushFrame() {
 	// create new scope and copy old scope to new scope
-	frame := Frame{scope: make(map[string]Object, len(e.callStack[e.framePointer].scope))}
-	for k, v := range e.callStack[e.framePointer].scope {
-		frame.scope[k] = v
-	}
+	frame := Frame{scope: make(map[string]Object)}
 
 	e.framePointer++
 	e.callStack[e.framePointer] = frame
@@ -209,6 +211,15 @@ func (e *Evaluator) pushFrame() {
 func (e *Evaluator) popFrame() {
 	e.callStack = e.callStack[:len(e.callStack)-1]
 	e.framePointer--
+}
+
+func (e *Evaluator) getIdentifier(name string) (Object, error) {
+	for i := e.framePointer; i >= 0; i-- {
+		if variable, ok := e.callStack[i].scope[name]; ok {
+			return variable, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find reference")
 }
 
 func isTruthy(obj Node) bool {
