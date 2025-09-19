@@ -2,17 +2,25 @@ package core
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
 func TestParser(t *testing.T) {
 	cases := []struct {
-		name  string
-		input string
+		name     string
+		input    string
+		expected []Node
 	}{
 		{
-			name: "test for loop",
-			input: "for i = 0 ; i < 10; i++ {}",
+			name:  "test increment",
+			input: "i++",
+			expected: []Node{
+				&SufixNode{
+					Left:     &IdentifierLiteral{value: "i"},
+					Operator: "++",
+				},
+			},
 		},
 	}
 
@@ -24,7 +32,9 @@ func TestParser(t *testing.T) {
 		if err != nil {
 			fmt.Println(err)
 		}
-		
-		fmt.Printf("%+v", node.String())
+
+		if !reflect.DeepEqual(node, test.expected[0]) {
+			t.Errorf("test %s failed: expected %v, got %v", test.name, test.expected[0], node)
+		}
 	}
 }

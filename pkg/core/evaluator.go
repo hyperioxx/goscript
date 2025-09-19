@@ -195,6 +195,29 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 		default:
 			return &Nil{}, fmt.Errorf("unknown operator: %s", n.Operator)
 		}
+	case *SufixNode:
+		switch n.Operator {
+		case "++":
+			left, err := e.Evaluate(n.Left)
+			if err != nil {
+				return &Nil{}, err
+			}
+			switch left := left.(type) {
+			case *Integer:
+				newVal := &Integer{value: left.value + 1}
+				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
+				return newVal, nil
+			case *Float:
+				newVal := &Float{value: left.value + 1.0}
+				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
+				return newVal, nil
+			default:
+				return &Nil{}, fmt.Errorf("operator '++' not supported for type %T", left)
+			}
+
+		default:
+			return &Nil{}, fmt.Errorf("unknown operator: %s", n.Operator)
+		}
 	default:
 		return nil, fmt.Errorf("Unknown %T", n)
 	}

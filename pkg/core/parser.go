@@ -36,6 +36,7 @@ var precedences = map[TokenType]int{
 	ASSIGN_INF: ASSIGN_P,
 	IF:         IF_P,
 	LBRACKET:   ARRAY_P,
+	INC:        SUM,
 }
 
 type Parser interface {
@@ -82,6 +83,7 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	p.registerInfix(LT_EQ, p.parseInfixNode)
 	p.registerInfix(ASSIGN, p.parseInfixNode)
 	p.registerInfix(ASSIGN_INF, p.parseInfixNode)
+	p.registerInfix(INC, p.parseInrementNode)
 	// prefix expressions
 	p.registerPrefix(INT, p.parseIntegerLiteral)
 	p.registerPrefix(IDENT, p.parseIdentifier)
@@ -424,25 +426,6 @@ func (p *V1Parser) parseInfixNode(left Node) (Node, error) {
 		fmt.Printf("Right Node: %v\n", Node.Right)
 		fmt.Println("Exiting parseInfixNode")
 	}
-	
-
-	return Node, nil
-}
-
-func (p *V1Parser) parsePrefixNode() (Node, error) {
-	Node := &PrefixNode{
-		Operator: p.curToken.Value,
-	}
-
-	p.nextToken()
-
-	right, err := p.ParseNode(PREFIX)
-
-	if err != nil {
-		return nil, err
-	}
-
-	Node.Right = right
 
 	return Node, nil
 }
@@ -526,7 +509,6 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 
 	components := []Node{}
 
-
 	for !p.curTokenIs(LBRACE) && len(components) <= 3 {
 		p.nextToken()
 		node, err := p.ParseNode(LOWEST)
@@ -560,6 +542,16 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 	}
 
 	return forExp, nil
+}
+
+func (p *V1Parser) parseInrementNode(left Node) (Node, error) {
+	
+	Node := &SufixNode{
+		Left:     left,
+		Operator: p.curToken.Value,
+	}
+
+	return Node, nil
 }
 
 func (p *V1Parser) parseBlockStatement() (*BlockStatement, error) {
