@@ -889,6 +889,29 @@ func (pe *PrefixNode) GetColumn() int {
 	return pe.Column
 }
 
+type SufixNode struct {
+	Operator string
+	Left     Node
+	Line     int
+	Column   int
+}
+
+func (se *SufixNode) String() *String {
+	return &String{fmt.Sprintf("%s%s", se.Left.String(), se.Operator)}
+}
+
+func (se *SufixNode) Value() interface{} {
+	return se.Operator
+}
+
+func (se *SufixNode) GetLine() int {
+	return se.Line
+}
+
+func (se *SufixNode) GetColumn() int {
+	return se.Column
+}
+
 type IfNode struct {
 	Condition   Node
 	Consequence Node
