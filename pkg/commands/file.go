@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"goscript/pkg/core"
+	"github.com/hyperioxx/goscript/pkg/core"
 )
 
 type FileHandler struct {
