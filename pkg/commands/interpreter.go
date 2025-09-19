@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"goscript/pkg/core"
-	"goscript/pkg/version"
+	"github.com/hyperioxx/goscript/pkg/core"
+	"github.com/hyperioxx/goscript/pkg/version"
 )
 
 type Interpreter struct {
