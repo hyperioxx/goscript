@@ -1,10 +1,10 @@
 # GoScript
 
 
-GoScript is a dynamically typed, interpreted language created out of curiosity to answer that question we ask as programmers: "How do you make a programming language from scratch?" So, I've given it a try.
+GoScript is a dynamically typed, interpreted language created out of curiosity of "How do you build a programming language?"
 
 ## Requirements:
-- Go 1.21
+- Go 1.24
 
 ## Install
 
@@ -12,14 +12,7 @@ GoScript is a dynamically typed, interpreted language created out of curiosity t
 go install github.com/hyperioxx/goscript/cmd/goscript@latest 
 ```
 
-Note: This is still a work in progress 
-
-Broken things:
-- call stack not fully implemented
-- scoping 
-- native goscript function calls
-- native function arguments 
-
+## Examples
 
 Example syntax:
 ```
@@ -36,4 +29,6 @@ if myInt > 1 {
     print(x) // builtin function 
 }
 ```
+
+Please see the examples folder for more 
 
