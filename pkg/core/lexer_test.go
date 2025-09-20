@@ -10,14 +10,41 @@ func TestLexer(t *testing.T) {
 		name     string
 		input    string
 		expected []Token
-	}{  {
-        name: "test increment",
-		input: "i++",
-		expected: []Token{
-			{Value: "i", Type: IDENT, Line: 1, Column: 1},
-			{Value: "++", Type: INC, Line: 1, Column: 2},
+	}{
+		{
+			name:  "test increment",
+			input: "i++",
+			expected: []Token{
+				{Value: "i", Type: IDENT, Line: 1, Column: 1},
+				{Value: "++", Type: INC, Line: 1, Column: 2},
+			},
 		},
-	   	},
+		{
+			name:  "test decrement",
+			input: "i--",
+			expected: []Token{
+				{Value: "i", Type: IDENT, Line: 1, Column: 1},
+				{Value: "--", Type: DEC, Line: 1, Column: 2},
+			},
+		},
+		{
+			name:  "test greater than",
+			input: "i > 10",
+			expected: []Token{
+				{Value: "i", Type: IDENT, Line: 1, Column: 1},
+				{Value: ">", Type: GT, Line: 1, Column: 3},
+				{Value: "10", Type: INT, Line: 1, Column: 5},
+			},
+		},
+		{
+			name:  "test less than",
+			input: "i < 10",
+			expected: []Token{
+				{Value: "i", Type: IDENT, Line: 1, Column: 1},
+				{Value: "<", Type: LT, Line: 1, Column: 3},
+				{Value: "10", Type: INT, Line: 1, Column: 5},
+			},
+		},
 		{
 			name:  "test for loop",
 			input: "for i = 0 ; i < 10; i = i++ {}",
