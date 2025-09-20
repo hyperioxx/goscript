@@ -17,6 +17,26 @@ func TestEval(t *testing.T) {
 			input:    []string{"i = 0", "i++"},
 			expected: []Object{&Nil{}, &Integer{value: 1}},
 		},
+		{
+			name:     "test decrement",
+			input:    []string{"i = 1", "i--"},
+			expected: []Object{&Nil{}, &Integer{value: 0}},
+		},
+		{
+			name: "test for loop with increment",
+			input: []string{
+				"sum = 0",
+				"for i = 0 ; i < 10; i {sum = sum + i}",
+				"sum",
+			},
+			expected: []Object{
+				&Nil{},
+				&Nil{},
+				&Nil{},
+				&Nil{},
+				&Integer{value: 45},
+			},
+		},
 	}
 
 	for _, test := range cases {

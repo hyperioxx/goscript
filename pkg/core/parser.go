@@ -37,6 +37,7 @@ var precedences = map[TokenType]int{
 	IF:         IF_P,
 	LBRACKET:   ARRAY_P,
 	INC:        SUM,
+	DEC:        SUM,
 }
 
 type Parser interface {
@@ -51,7 +52,6 @@ type V1Parser struct {
 	peekToken       Token
 	errors          []string
 	Debug           bool
-	lastParsedIdent string
 	prefixParseFns  map[TokenType]prefixParseFn
 	infixParseFns   map[TokenType]infixParseFn
 }
@@ -83,7 +83,8 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	p.registerInfix(LT_EQ, p.parseInfixNode)
 	p.registerInfix(ASSIGN, p.parseInfixNode)
 	p.registerInfix(ASSIGN_INF, p.parseInfixNode)
-	p.registerInfix(INC, p.parseInrementNode)
+	p.registerInfix(INC, p.parseSuffixNode)
+	p.registerInfix(DEC, p.parseSuffixNode)
 	// prefix expressions
 	p.registerPrefix(INT, p.parseIntegerLiteral)
 	p.registerPrefix(IDENT, p.parseIdentifier)
@@ -544,7 +545,7 @@ func (p *V1Parser) parseForStatement() (Node, error) {
 	return forExp, nil
 }
 
-func (p *V1Parser) parseInrementNode(left Node) (Node, error) {
+func (p *V1Parser) parseSuffixNode(left Node) (Node, error) {
 	
 	Node := &SufixNode{
 		Left:     left,

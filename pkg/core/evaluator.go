@@ -204,11 +204,28 @@ func (e *Evaluator) Evaluate(exp Node) (Object, error) {
 			}
 			switch left := left.(type) {
 			case *Integer:
-				newVal := &Integer{value: left.value + 1}
+				newVal, _ := left.Add(&Integer{value: 1}) // ignore error as adding integer to integer should never fail 
 				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
 				return newVal, nil
 			case *Float:
-				newVal := &Float{value: left.value + 1.0}
+				newVal, _ := left.Add(&Float{value: 1.0}) // ignore error as adding float to float should never fail
+				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
+				return newVal, nil
+			default:
+				return &Nil{}, fmt.Errorf("operator '++' not supported for type %T", left)
+			}
+		case "--":
+			left, err := e.Evaluate(n.Left)
+			if err != nil {
+				return &Nil{}, err
+			}
+			switch left := left.(type) {
+			case *Integer:
+				newVal, _ := left.Sub(&Integer{value: 1}) // ignore error as subtracting integer from integer should never fail
+				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
+				return newVal, nil
+			case *Float:
+				newVal, _ := left.Sub(&Float{value: 1.0}) // ignore error as subtracting float from float should never fail
 				e.callStack[e.framePointer].scope[n.Left.String().value] = newVal
 				return newVal, nil
 			default:
