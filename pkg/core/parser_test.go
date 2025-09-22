@@ -89,6 +89,21 @@ func TestParser(t *testing.T) {
 				},
 			},	
 		},
+		{
+			name:  "test struct literal",
+			input: "struct Test { name age height weight }",
+			expected: []Node{
+				&StructLiteral{
+					Name: &IdentifierLiteral{value: "Test"},
+					Fields: []*IdentifierLiteral{
+						{value: "name"},
+						{value: "age"},
+						{value: "height"},
+						{value: "weight"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range cases {

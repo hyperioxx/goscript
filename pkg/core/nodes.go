@@ -1061,3 +1061,18 @@ func (vd *VariableDeclaration) String() *String {
 func (vd *VariableDeclaration) Value() interface{} { return vd }
 func (vd *VariableDeclaration) GetLine() int       { return vd.Line }
 func (vd *VariableDeclaration) GetColumn() int     { return vd.Column }
+
+type StructLiteral struct {
+	Name   *IdentifierLiteral
+	Fields []*IdentifierLiteral
+	Line   int
+	Column int
+}
+
+func (s *StructLiteral) String() *String {
+	return &String{fmt.Sprintf("struct %s", s.Name.String())}
+}
+
+func (s *StructLiteral) Value() interface{} { return s }
+func (s *StructLiteral) GetLine() int       { return s.Line }
+func (s *StructLiteral) GetColumn() int     { return s.Column }

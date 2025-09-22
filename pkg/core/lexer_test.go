@@ -66,6 +66,20 @@ func TestLexer(t *testing.T) {
 				{Value: "}", Type: RBRACE, Line: 1, Column: 30},
 			},
 		},
+		{
+			name: "test struct declaration",
+			input: `struct test { name age height weight}`,
+			expected: []Token{
+				{Value: "struct", Type: STRUCT, Line: 1, Column: 1},
+				{Value: "test", Type: IDENT, Line: 1, Column: 8},
+				{Value: "{", Type: LBRACE, Line: 1, Column: 13},
+				{Value: "name", Type: IDENT, Line: 1, Column: 15},
+				{Value: "age", Type: IDENT, Line: 1, Column: 20},
+				{Value: "height", Type: IDENT, Line: 1, Column: 24},
+				{Value: "weight", Type: IDENT, Line: 1, Column: 31},
+				{Value: "}", Type: RBRACE, Line: 1, Column: 37},
+			},	
+		},
 	}
 
 	for _, test := range cases {

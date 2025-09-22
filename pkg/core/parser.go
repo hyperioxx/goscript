@@ -98,6 +98,7 @@ func NewV1Parser(l Lexer, debug bool) Parser {
 	p.registerPrefix(BOOL, p.parseBooleanLiteral)
 	p.registerPrefix(TRUE, p.parseBooleanLiteral)
 	p.registerPrefix(FALSE, p.parseBooleanLiteral)
+	p.registerPrefix(STRUCT, p.parseStructLiteral)
 
 	p.nextToken()
 	p.nextToken()
@@ -574,6 +575,43 @@ func (p *V1Parser) parseBlockStatement() (*BlockStatement, error) {
 
 	return block, nil
 }
+
+func (p *V1Parser) parseStructLiteral() (Node, error) {
+	structLit := &StructLiteral{}
+	if !p.expectPeek(IDENT) {
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+	}
+	structLit.Name = &IdentifierLiteral{value: p.curToken.Value}
+ 
+
+
+	if !p.expectPeek(LBRACE) {
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+	}
+
+	p.nextToken()
+
+	for !p.curTokenIs(RBRACE) && !p.curTokenIs(EOF) {
+		if p.curTokenIs(IDENT) {
+			field := &IdentifierLiteral{value: p.curToken.Value}
+			structLit.Fields = append(structLit.Fields, field)
+		} else {
+			return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+		}
+		p.nextToken()
+		if p.curTokenIs(COMMA) {
+			p.nextToken()
+		}
+	}
+
+	if !p.curTokenIs(RBRACE) {
+		return nil, fmt.Errorf(SYNTAX_ERROR_MSG, p.curToken.Line)
+	}
+
+	p.nextToken()
+
+	return structLit, nil
+}	
 
 func (p *V1Parser) peekTokenIs(t TokenType) bool {
 	return p.peekToken.Type == t

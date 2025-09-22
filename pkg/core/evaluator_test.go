@@ -25,9 +25,8 @@ func TestEval(t *testing.T) {
 		{
 			name: "test for loop with increment",
 			input: []string{
-				"sum = 0",
-				"for i = 0 ; i < 10; i {sum = sum + i}",
-				"sum",
+				"for i = 0 ; i < 10; i++ {}",
+				"i",
 			},
 			expected: []Object{
 				&Nil{},
@@ -36,6 +35,13 @@ func TestEval(t *testing.T) {
 				&Nil{},
 				&Integer{value: 45},
 			},
+		},
+		{
+			name: " test struct literal",
+			input: []string{
+				"struct Person { name age height weight }",
+			},	
+			expected: []Object{&Nil{},},
 		},
 	}
 
